@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info, Camera, Upload, Type, X, RotateCcw } from 'lucide-react';
 import { extractTextFromImage as performOCR } from '@/lib/ocr';
+import { FamilyManagement } from './family-management';
 
 // Types for AI analysis results
 interface AllergenAnalysis {
@@ -656,24 +657,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {activeTab === 'family' && (
-            <div>
-              <div className="section-header">
-                <Users size={22} />
-                <h2>Family Management</h2>
-              </div>
-              
-              <p className="section-description">
-                Manage your family members and their allergies 👨‍👩‍👧‍👦
-              </p>
-              
-              <div className="coming-soon">
-                <div className="coming-soon-icon">🌱</div>
-                <h3>Family Profiles</h3>
-                <p>Add family members, manage their allergies, and set severity levels. Growing soon!</p>
-              </div>
-            </div>
-          )}
+          {activeTab === 'family' && <FamilyManagement />}
 
           {activeTab === 'history' && (
             <div>

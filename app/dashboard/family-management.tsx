@@ -140,50 +140,73 @@ export const FamilyManagement = () => {
     };
 
     return (
-      <div className="add-member-form">
-        <div className="form-header">
-          <h3>Add Family Member</h3>
-          <button 
-            onClick={() => setShowAddMember(false)}
-            className="close-button"
-          >
-            ×
-          </button>
-        </div>
-
+      <div>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Name *</label>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              Name *
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter name"
               required
-              className="form-input"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                backgroundColor: '#ffffff',
+                border: '2px solid #d1d5db',
+                borderRadius: '8px',
+                color: '#1f2937',
+                fontSize: '0.9rem',
+                boxSizing: 'border-box'
+              }}
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Age (optional)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                Age (optional)
+              </label>
               <input
                 type="number"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 placeholder="Age"
-                className="form-input"
                 min="0"
                 max="120"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  backgroundColor: '#ffffff',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  color: '#1f2937',
+                  fontSize: '0.9rem',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
 
-            <div className="form-group">
-              <label>Role</label>
+            <div>
+              <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                Role
+              </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as any)}
-                className="form-input"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  backgroundColor: '#ffffff',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  color: '#1f2937',
+                  fontSize: '0.9rem',
+                  boxSizing: 'border-box'
+                }}
               >
                 <option value="child">Child</option>
                 <option value="parent">Parent</option>
@@ -192,45 +215,94 @@ export const FamilyManagement = () => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Known Allergies</label>
-            <div className="allergy-grid">
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              Known Allergies
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
               {commonAllergens.map(allergen => (
                 <button
                   key={allergen}
                   type="button"
                   onClick={() => toggleAllergy(allergen)}
-                  className={`allergy-chip ${selectedAllergies.includes(allergen) ? 'selected' : ''}`}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: selectedAllergies.includes(allergen) 
+                      ? '#22c55e' 
+                      : '#f3f4f6',
+                    color: selectedAllergies.includes(allergen) 
+                      ? '#ffffff' 
+                      : '#374151',
+                    border: selectedAllergies.includes(allergen)
+                      ? '2px solid #22c55e'
+                      : '2px solid #d1d5db',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease'
+                  }}
                 >
                   {allergen}
                 </button>
               ))}
             </div>
             
-            <div className="custom-allergy">
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
                 value={customAllergen}
                 onChange={(e) => setCustomAllergen(e.target.value)}
                 placeholder="Add custom allergy..."
-                className="form-input"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomAllergy())}
+                style={{
+                  flex: '1',
+                  padding: '0.75rem',
+                  backgroundColor: '#ffffff',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  color: '#1f2937',
+                  fontSize: '0.9rem',
+                  boxSizing: 'border-box'
+                }}
               />
               <button 
                 type="button" 
                 onClick={addCustomAllergy}
-                className="add-custom-btn"
+                style={{
+                  padding: '0.75rem 1rem',
+                  backgroundColor: '#f3f4f6',
+                  color: '#374151',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  fontWeight: '500'
+                }}
               >
                 Add
               </button>
             </div>
           </div>
 
-          <div className="form-actions">
-            <button type="submit" className="save-btn">
-              Add Family Member
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            style={{
+              width: '100%',
+              padding: '0.875rem',
+              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '0.95rem'
+            }}
+          >
+            Add Family Member
+          </button>
         </form>
       </div>
     );
@@ -352,9 +424,65 @@ export const FamilyManagement = () => {
       )}
 
       {showAddMember && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <AddMemberForm />
+        <div 
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+        >
+          <div 
+            className="modal-content"
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              border: '2px solid #e5e7eb'
+            }}
+          >
+            <div 
+              style={{
+                padding: '2rem',
+                color: '#1f2937',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '600', color: '#1f2937', margin: '0' }}>
+                  Add Family Member
+                </h3>
+                <button 
+                  onClick={() => setShowAddMember(false)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    color: '#6b7280',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <AddMemberForm />
+            </div>
           </div>
         </div>
       )}

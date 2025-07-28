@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info, Camera, Upload, Type, X, RotateCcw } from 'lucide-react';
+import { extractTextFromImage as performOCR } from '@/lib/ocr';
 
 // Types for AI analysis results
 interface AllergenAnalysis {
@@ -254,18 +255,22 @@ export default function Dashboard() {
     setIsProcessingImage(true);
     
     try {
-      // Simulate OCR processing for now
-      setTimeout(() => {
-        const simulatedText = "Enriched wheat flour, sugar, palm oil, eggs, milk powder, natural vanilla flavor, salt, baking soda, soy lecithin";
-        setIngredients(simulatedText);
-        setIsProcessingImage(false);
-        alert('✅ Text extracted! Review the ingredients and click Analyze.');
-      }, 2000);
+      console.log('🚀 Starting real OCR extraction...');
+      const extractedText = await performOCR(imageDataUrl);
       
+      if (extractedText.trim().length > 10) {
+        setIngredients(extractedText);
+        console.log('✅ Successfully extracted:', extractedText);
+        alert('✅ Text extracted successfully! Review and edit if needed, then click Analyze.');
+      } else {
+        console.log('⚠️ No clear text found');
+        alert('⚠️ Could not find clear text in image. Please try:\n• Better lighting\n• Clearer focus\n• Different angle\n• Closer to the ingredients text\n• Or type manually');
+      }
     } catch (error) {
-      console.error('OCR Error:', error);
+      console.error('❌ OCR processing error:', error);
+      alert('❌ Failed to extract text. Please try typing the ingredients manually.');
+    } finally {
       setIsProcessingImage(false);
-      alert('Failed to extract text from image. Please try typing the ingredients manually.');
     }
   };
 

@@ -108,7 +108,7 @@ export default function Dashboard() {
           </div>
           
           <h1 className="app-title">
-            Welcome back, {session.user?.name || session.user?.email?.split('@')[0]}!
+            Welcome back{session.user?.name ? `, ${session.user.name.split(' ')[0]}` : ''}!
           </h1>
           <p className="app-subtitle">
             Keep your family safe with AI-powered allergen detection

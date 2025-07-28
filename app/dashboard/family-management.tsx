@@ -43,13 +43,80 @@ export const FamilyManagement = () => {
   const loadFamilyMembers = async () => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // For now, start with empty array - users will add their own members
-      setFamilyMembers([]);
+      const response = await fetch('/api/family');
+      if (response.ok) {
+        const data = await response.json();
+        setFamilyMembers(data.familyMembers || []);
+      } else {
+        console.error('Failed to load family members');
+      }
     } catch (error) {
       console.error('Failed to load family members:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEditMember = (member: FamilyMember) => {
+    setEditingMember(member);
+    setShowAddMember(true); // Reuse the same modal
+  };
+
+  const handleUpdateMember = async (memberData: any) => {
+    try {
+      const response = await fetch('/api/family', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(memberData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFamilyMembers(data.familyMembers);
+        setEditingMember(null);
+        setShowAddMember(false);
+        alert('✅ Family member updated successfully!');
+      } else {
+        const errorData = await response.json();
+        alert('❌ Failed to update family member: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating family member:', error);
+      alert('❌ Failed to update family member. Please try again.');
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this family member?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/family?id=${memberId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFamilyMembers(data.familyMembers);
+        alert('✅ Family member removed successfully!');
+      } else {
+        const errorData = await response.json();
+        alert('❌ Failed to remove family member: ' + (errorData.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error removing family member:', error);
+      alert('❌ Failed to remove family member. Please try again.');
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'parent': return Crown;
+      case 'child': return Baby;
+      default: return User;
     }
   };
 
@@ -63,48 +130,67 @@ export const FamilyManagement = () => {
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'parent': return Crown;
-      case 'child': return Baby;
-      default: return User;
-    }
-  };
-
   const AddMemberForm = () => {
-    const [name, setName] = useState('');
-    const [age, setAge] = useState('');
-    const [role, setRole] = useState<'parent' | 'child' | 'other'>('child');
-    const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
+    const [name, setName] = useState(editingMember?.name || '');
+    const [age, setAge] = useState(editingMember?.age?.toString() || '');
+    const [role, setRole] = useState<'parent' | 'child' | 'other'>(editingMember?.role || 'child');
+    const [selectedAllergies, setSelectedAllergies] = useState<string[]>(
+      editingMember?.allergies.map(a => a.allergen) || []
+    );
     const [customAllergen, setCustomAllergen] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
+      setIsLoading(true);
       
-      const newMember: FamilyMember = {
-        id: Date.now().toString(),
-        name,
-        age: age ? parseInt(age) : undefined,
-        role,
-        allergies: selectedAllergies.map(allergen => ({
-          id: Date.now().toString() + Math.random(),
-          allergen,
-          severity: 'moderate' as const
-        }))
-      };
+      try {
+        const memberData = {
+          ...(editingMember && { id: editingMember.id }),
+          name,
+          age: age ? parseInt(age) : undefined,
+          role,
+          allergies: selectedAllergies.map(allergen => ({
+            id: Date.now().toString() + Math.random(),
+            allergen,
+            severity: 'moderate' as const
+          }))
+        };
 
-      // Add to the state immediately
-      setFamilyMembers(prev => [...prev, newMember]);
-      setShowAddMember(false);
-      
-      // Reset form
-      setName('');
-      setAge('');
-      setRole('child');
-      setSelectedAllergies([]);
-      setCustomAllergen('');
-      
-      console.log('Added family member:', newMember);
+        if (editingMember) {
+          await handleUpdateMember(memberData);
+        } else {
+          const response = await fetch('/api/family', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(memberData),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setFamilyMembers(data.familyMembers);
+            setShowAddMember(false);
+            alert('✅ Family member added successfully!');
+          } else {
+            const errorData = await response.json();
+            alert('❌ Failed to add family member: ' + (errorData.error || 'Unknown error'));
+          }
+        }
+        
+        // Reset form
+        setName('');
+        setAge('');
+        setRole('child');
+        setSelectedAllergies([]);
+        setCustomAllergen('');
+        
+      } catch (error) {
+        console.error('Error saving family member:', error);
+        alert('❌ Failed to save family member. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     const toggleAllergy = (allergen: string) => {
@@ -272,19 +358,20 @@ export const FamilyManagement = () => {
 
           <button 
             type="submit" 
+            disabled={isLoading}
             style={{
               width: '100%',
               padding: '0.875rem',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              background: isLoading ? '#9ca3af' : 'linear-gradient(135deg, #22c55e, #16a34a)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               fontSize: '0.95rem'
             }}
           >
-            Add Family Member
+            {isLoading ? 'Saving...' : (editingMember ? 'Update Family Member' : 'Add Family Member')}
           </button>
         </form>
       </div>
@@ -351,7 +438,7 @@ export const FamilyManagement = () => {
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
-            onClick={() => setEditingMember(member)}
+            onClick={() => handleEditMember(member)}
           >
             <Edit3 size={16} />
           </button>
@@ -586,10 +673,13 @@ export const FamilyManagement = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: '600', color: '#1f2937', margin: '0' }}>
-                  Add Family Member
+                  {editingMember ? 'Edit Family Member' : 'Add Family Member'}
                 </h3>
                 <button 
-                  onClick={() => setShowAddMember(false)}
+                  onClick={() => {
+                    setShowAddMember(false);
+                    setEditingMember(null);
+                  }}
                   style={{
                     width: '32px',
                     height: '32px',

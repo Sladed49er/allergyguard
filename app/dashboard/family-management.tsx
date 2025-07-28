@@ -121,12 +121,24 @@ export const FamilyManagement = () => {
   };
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
+    switch (severity.toLowerCase()) {
       case 'mild': return '#22c55e';
       case 'moderate': return '#f59e0b';
       case 'severe': return '#f97316';
+      case 'life_threatening':
       case 'life-threatening': return '#ef4444';
       default: return '#6b7280';
+    }
+  };
+
+  const formatSeverityDisplay = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case 'life_threatening':
+      case 'life-threatening': return 'Life Threatening';
+      case 'mild': return 'Mild';
+      case 'moderate': return 'Moderate';
+      case 'severe': return 'Severe';
+      default: return severity;
     }
   };
 
@@ -414,7 +426,7 @@ export const FamilyManagement = () => {
                       <option value="mild">Mild</option>
                       <option value="moderate">Moderate</option>
                       <option value="severe">Severe</option>
-                      <option value="life-threatening">Life Threatening</option>
+                      <option value="life_threatening">Life Threatening</option>
                     </select>
                   )}
                 </div>
@@ -468,7 +480,7 @@ export const FamilyManagement = () => {
                         <option value="mild">Mild</option>
                         <option value="moderate">Moderate</option>
                         <option value="severe">Severe</option>
-                        <option value="life-threatening">Life Threatening</option>
+                        <option value="life_threatening">Life Threatening</option>
                       </select>
                     </div>
                   ))}
@@ -587,20 +599,37 @@ export const FamilyManagement = () => {
             </div>
           </div>
           
-          <button 
-            style={{
-              padding: '0.5rem',
-              background: 'rgba(107, 114, 128, 0.1)',
-              color: '#6b7280',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onClick={() => handleEditMember(member)}
-          >
-            <Edit3 size={16} />
-          </button>
+          <div className="member-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              style={{
+                padding: '0.5rem',
+                background: 'rgba(107, 114, 128, 0.1)',
+                color: '#6b7280',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onClick={() => handleEditMember(member)}
+            >
+              <Edit3 size={16} />
+            </button>
+            
+            <button 
+              style={{
+                padding: '0.5rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#dc2626',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onClick={() => handleDeleteMember(member.id)}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
 
         <div>
@@ -644,7 +673,7 @@ export const FamilyManagement = () => {
                         backgroundColor: getSeverityColor(allergy.severity)
                       }}
                     >
-                      {allergy.severity}
+                      {formatSeverityDisplay(allergy.severity)}
                     </span>
                   </div>
                   {allergy.symptoms && (

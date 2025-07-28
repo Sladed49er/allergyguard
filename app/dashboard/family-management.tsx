@@ -44,28 +44,8 @@ export const FamilyManagement = () => {
     setIsLoading(true);
     try {
       // TODO: Replace with actual API call
-      // const response = await fetch('/api/family');
-      // const data = await response.json();
-      
-      // Mock data for now
-      const mockMembers: FamilyMember[] = [
-        {
-          id: '1',
-          name: 'You',
-          role: 'parent',
-          allergies: [
-            {
-              id: '1',
-              allergen: 'Peanuts',
-              severity: 'severe',
-              symptoms: 'Difficulty breathing, hives',
-              notes: 'Always carry EpiPen'
-            }
-          ]
-        }
-      ];
-      
-      setFamilyMembers(mockMembers);
+      // For now, start with empty array - users will add their own members
+      setFamilyMembers([]);
     } catch (error) {
       console.error('Failed to load family members:', error);
     } finally {
@@ -113,8 +93,8 @@ export const FamilyManagement = () => {
         }))
       };
 
-      // TODO: Save to API
-      setFamilyMembers([...familyMembers, newMember]);
+      // Add to the state immediately
+      setFamilyMembers(prev => [...prev, newMember]);
       setShowAddMember(false);
       
       // Reset form
@@ -122,6 +102,9 @@ export const FamilyManagement = () => {
       setAge('');
       setRole('child');
       setSelectedAllergies([]);
+      setCustomAllergen('');
+      
+      console.log('Added family member:', newMember);
     };
 
     const toggleAllergy = (allergen: string) => {
@@ -312,52 +295,118 @@ export const FamilyManagement = () => {
     const RoleIcon = getRoleIcon(member.role);
     
     return (
-      <div className="member-card">
-        <div className="member-header">
-          <div className="member-info">
-            <div className="member-avatar">
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.8)',
+        border: '1px solid rgba(255, 255, 255, 0.9)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '1.5rem'
+        }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white'
+            }}>
               <RoleIcon size={24} />
             </div>
             <div>
-              <h4>{member.name}</h4>
-              <span className="member-details">
+              <h4 style={{
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: '0 0 0.25rem 0'
+              }}>
+                {member.name}
+              </h4>
+              <span style={{
+                fontSize: '0.85rem',
+                color: '#6b7280',
+                textTransform: 'capitalize'
+              }}>
                 {member.age && `${member.age} years old • `}
                 {member.role}
               </span>
             </div>
           </div>
           
-          <div className="member-actions">
-            <button 
-              className="edit-btn"
-              onClick={() => setEditingMember(member)}
-            >
-              <Edit3 size={16} />
-            </button>
-          </div>
+          <button 
+            style={{
+              padding: '0.5rem',
+              background: 'rgba(107, 114, 128, 0.1)',
+              color: '#6b7280',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onClick={() => setEditingMember(member)}
+          >
+            <Edit3 size={16} />
+          </button>
         </div>
 
-        <div className="allergies-section">
-          <h5>Allergies ({member.allergies.length})</h5>
+        <div>
+          <h5 style={{
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            color: '#1f2937',
+            margin: '0 0 0.75rem 0'
+          }}>
+            Allergies ({member.allergies.length})
+          </h5>
           {member.allergies.length > 0 ? (
-            <div className="allergies-list">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {member.allergies.map(allergy => (
                 <div 
                   key={allergy.id} 
-                  className="allergy-item"
-                  style={{ borderLeft: `4px solid ${getSeverityColor(allergy.severity)}` }}
+                  style={{
+                    padding: '0.75rem',
+                    background: 'rgba(255, 255, 255, 0.6)',
+                    borderRadius: '8px',
+                    borderLeft: `4px solid ${getSeverityColor(allergy.severity)}`
+                  }}
                 >
-                  <div className="allergy-main">
-                    <span className="allergy-name">{allergy.allergen}</span>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.25rem'
+                  }}>
+                    <span style={{ fontWeight: '500', color: '#1f2937' }}>
+                      {allergy.allergen}
+                    </span>
                     <span 
-                      className="severity-badge"
-                      style={{ backgroundColor: getSeverityColor(allergy.severity) }}
+                      style={{
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500',
+                        color: 'white',
+                        textTransform: 'capitalize',
+                        backgroundColor: getSeverityColor(allergy.severity)
+                      }}
                     >
                       {allergy.severity}
                     </span>
                   </div>
                   {allergy.symptoms && (
-                    <div className="allergy-symptoms">
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#6b7280',
+                      marginTop: '0.25rem'
+                    }}>
                       Symptoms: {allergy.symptoms}
                     </div>
                   )}
@@ -365,7 +414,17 @@ export const FamilyManagement = () => {
               ))}
             </div>
           ) : (
-            <div className="no-allergies">
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              background: 'rgba(34, 197, 94, 0.05)',
+              border: '1px solid rgba(34, 197, 94, 0.2)',
+              borderRadius: '8px',
+              color: '#059669',
+              fontSize: '0.9rem'
+            }}>
               <Heart size={20} style={{ color: '#22c55e' }} />
               <span>No known allergies</span>
             </div>
@@ -376,19 +435,48 @@ export const FamilyManagement = () => {
   };
 
   return (
-    <div className="family-management">
-      <div className="section-header">
-        <div className="header-content">
+    <div style={{ maxWidth: '100%' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start', 
+        marginBottom: '2rem', 
+        gap: '1rem',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
           <Users size={22} />
           <div>
-            <h2>Family Management</h2>
-            <p>Manage your family members and their allergies</p>
+            <h2 style={{ 
+              fontSize: '1.4rem', 
+              fontWeight: '600', 
+              color: '#1f2937', 
+              margin: '0 0 0.25rem 0' 
+            }}>
+              Family Management
+            </h2>
+            <p style={{ color: '#6b7280', margin: '0', fontSize: '0.9rem' }}>
+              Manage your family members and their allergies
+            </p>
           </div>
         </div>
         
         <button 
           onClick={() => setShowAddMember(true)}
-          className="add-member-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1rem',
+            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            whiteSpace: 'nowrap'
+          }}
         >
           <Plus size={18} />
           Add Member
@@ -396,24 +484,60 @@ export const FamilyManagement = () => {
       </div>
 
       {isLoading ? (
-        <div className="loading-state">
-          <div className="organic-spinner" />
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+          <div style={{
+            width: '24px',
+            height: '24px',
+            border: '2px solid #e5e7eb',
+            borderTop: '2px solid #22c55e',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }} />
           <p>Loading family members...</p>
         </div>
       ) : (
-        <div className="members-grid">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+          gap: '1.5rem'
+        }}>
           {familyMembers.map(member => (
             <MemberCard key={member.id} member={member} />
           ))}
           
           {familyMembers.length === 0 && (
-            <div className="empty-state">
+            <div style={{
+              gridColumn: '1 / -1',
+              textAlign: 'center',
+              padding: '3rem 2rem',
+              color: '#6b7280'
+            }}>
               <Users size={48} />
-              <h3>No family members added yet</h3>
+              <h3 style={{
+                fontSize: '1.2rem',
+                color: '#1f2937',
+                margin: '1rem 0 0.5rem 0'
+              }}>
+                No family members added yet
+              </h3>
               <p>Add family members to track their specific allergies</p>
               <button 
                 onClick={() => setShowAddMember(true)}
-                className="add-first-member-btn"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1rem',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  margin: '1rem auto 0',
+                  transition: 'all 0.2s ease'
+                }}
               >
                 <Plus size={18} />
                 Add Your First Family Member

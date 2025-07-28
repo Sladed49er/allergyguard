@@ -72,14 +72,29 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      // TODO: Implement registration API call
-      console.log('Registration data:', formData)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Redirect to login or dashboard
+      // Call the registration API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed')
+      }
+
+      // Success! Show success message and redirect
+      alert(`Welcome ${data.user.name}! Account created successfully. You can now sign in.`)
       window.location.href = '/login'
+      
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.')
     } finally {

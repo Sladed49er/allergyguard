@@ -142,7 +142,10 @@ export default function RegisterPage() {
       `}</style>
       
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)'
+        background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         {/* Animated Background Overlay */}
         <div className="absolute inset-0" style={{
@@ -166,9 +169,10 @@ export default function RegisterPage() {
         ))}
 
         {/* Registration Form */}
-        <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="relative z-10 w-full max-w-md mx-auto px-4">
           <div className="glass-card p-8 rounded-2xl shadow-2xl" style={{
-            border: '1px solid rgba(255, 255, 255, 0.2)'
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            margin: '0 auto'
           }}>
             {/* Header */}
             <div className="text-center mb-8">

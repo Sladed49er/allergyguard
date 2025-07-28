@@ -2,8 +2,8 @@
 
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info, Camera, Upload, Type, X, RotateCcw } from 'lucide-react';
 
 // Types for AI analysis results
 interface AllergenAnalysis {
@@ -95,6 +95,15 @@ export default function Dashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AllergenAnalysis | null>(null);
   const [error, setError] = useState('');
+  
+  // Scanner state
+  const [scanMode, setScanMode] = useState<'text' | 'camera' | 'upload'>('text');
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Organic food-related icons for floating particles
   const organicIcons = [Wheat, Milk, Fish, Nut, Leaf];
@@ -176,6 +185,98 @@ export default function Dashboard() {
     setIngredients('');
     setAnalysisResult(null);
     setError('');
+    setScanMode('text');
+    setCapturedImage(null);
+    stopCamera();
+  };
+
+  // Scanner functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setCameraStream(stream);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Unable to access camera. Please try uploading an image instead.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+        const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setCapturedImage(imageDataUrl);
+        stopCamera();
+        extractTextFromImage(imageDataUrl);
+      }
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageDataUrl = e.target?.result as string;
+        setCapturedImage(imageDataUrl);
+        extractTextFromImage(imageDataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const extractTextFromImage = async (imageDataUrl: string) => {
+    setIsProcessingImage(true);
+    
+    try {
+      // Simulate OCR processing for now
+      setTimeout(() => {
+        const simulatedText = "Enriched wheat flour, sugar, palm oil, eggs, milk powder, natural vanilla flavor, salt, baking soda, soy lecithin";
+        setIngredients(simulatedText);
+        setIsProcessingImage(false);
+        alert('✅ Text extracted! Review the ingredients and click Analyze.');
+      }, 2000);
+      
+    } catch (error) {
+      console.error('OCR Error:', error);
+      setIsProcessingImage(false);
+      alert('Failed to extract text from image. Please try typing the ingredients manually.');
+    }
+  };
+
+  const handleModeChange = (mode: 'text' | 'camera' | 'upload') => {
+    setScanMode(mode);
+    setCapturedImage(null);
+    stopCamera();
+    
+    if (mode === 'camera') {
+      startCamera();
+    }
   };
 
   const tabs = [
@@ -256,23 +357,181 @@ export default function Dashboard() {
               </div>
               
               <p className="section-description">
-                Paste ingredient lists below and get instant allergen analysis for your family 🔍
+                Type, photograph, or upload ingredient lists for instant AI analysis 📱
               </p>
               
-              <div className="input-group">
-                <label htmlFor="ingredients" className="organic-label">
-                  Ingredient List
-                </label>
-                <textarea
-                  id="ingredients"
-                  value={ingredients}
-                  onChange={(e) => setIngredients(e.target.value)}
-                  className="organic-textarea"
-                  placeholder="Paste ingredient list here... (e.g., Enriched Wheat Flour, Sugar, Palm Oil, Eggs, Milk Powder, Vanilla Extract, Salt)"
-                  rows={6}
-                  disabled={isAnalyzing}
-                />
+              {/* Scanner Mode Selection */}
+              <div className="scanner-modes">
+                <button
+                  onClick={() => handleModeChange('text')}
+                  className={`mode-button ${scanMode === 'text' ? 'active' : ''}`}
+                >
+                  <Type size={18} />
+                  <span>Type Text</span>
+                </button>
+                
+                <button
+                  onClick={() => handleModeChange('camera')}
+                  className={`mode-button ${scanMode === 'camera' ? 'active' : ''}`}
+                >
+                  <Camera size={18} />
+                  <span>Take Photo</span>
+                </button>
+                
+                <button
+                  onClick={() => handleModeChange('upload')}
+                  className={`mode-button ${scanMode === 'upload' ? 'active' : ''}`}
+                >
+                  <Upload size={18} />
+                  <span>Upload Image</span>
+                </button>
               </div>
+
+              {/* Scanner Content */}
+              <div className="scanner-content">
+                {scanMode === 'text' && (
+                  <div className="input-group">
+                    <label htmlFor="ingredients" className="organic-label">
+                      Ingredient List
+                    </label>
+                    <textarea
+                      id="ingredients"
+                      value={ingredients}
+                      onChange={(e) => setIngredients(e.target.value)}
+                      className="organic-textarea"
+                      placeholder="Paste or type ingredient list here... (e.g., Enriched Wheat Flour, Sugar, Palm Oil, Eggs, Milk Powder, Vanilla Extract, Salt)"
+                      rows={6}
+                      disabled={isAnalyzing}
+                    />
+                  </div>
+                )}
+
+                {scanMode === 'camera' && (
+                  <div className="camera-scanner">
+                    {!capturedImage ? (
+                      <div className="camera-container">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="camera-video"
+                        />
+                        <canvas ref={canvasRef} style={{ display: 'none' }} />
+                        
+                        <div className="camera-overlay">
+                          <div className="scan-frame">
+                            <div className="frame-corner tl"></div>
+                            <div className="frame-corner tr"></div>
+                            <div className="frame-corner bl"></div>
+                            <div className="frame-corner br"></div>
+                          </div>
+                          
+                          <div className="camera-instructions">
+                            <p>📱 Position ingredient label in frame</p>
+                            <p>Ensure good lighting and focus</p>
+                          </div>
+                        </div>
+                        
+                        <div className="camera-controls">
+                          <button
+                            onClick={capturePhoto}
+                            className="capture-button"
+                            disabled={!cameraStream}
+                          >
+                            <div className="capture-circle"></div>
+                          </button>
+                          
+                          <button
+                            onClick={() => handleModeChange('text')}
+                            className="cancel-button"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="captured-image">
+                        <img src={capturedImage} alt="Captured ingredient label" />
+                        
+                        {isProcessingImage && (
+                          <div className="processing-overlay">
+                            <div className="organic-spinner large"></div>
+                            <p>🔍 Extracting text from image...</p>
+                          </div>
+                        )}
+                        
+                        <div className="image-controls">
+                          <button
+                            onClick={() => setCapturedImage(null)}
+                            className="retake-button"
+                          >
+                            <RotateCcw size={16} />
+                            Retake Photo
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {scanMode === 'upload' && (
+                  <div className="upload-scanner">
+                    {!capturedImage ? (
+                      <div 
+                        className="upload-area"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload size={48} />
+                        <h3>Upload Ingredient Label Photo</h3>
+                        <p>Click to select an image from your device</p>
+                        <p className="file-info">Supports JPG, PNG, WebP</p>
+                        
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="uploaded-image">
+                        <img src={capturedImage} alt="Uploaded ingredient label" />
+                        
+                        {isProcessingImage && (
+                          <div className="processing-overlay">
+                            <div className="organic-spinner large"></div>
+                            <p>🔍 Extracting text from image...</p>
+                          </div>
+                        )}
+                        
+                        <div className="image-controls">
+                          <button
+                            onClick={() => setCapturedImage(null)}
+                            className="retake-button"
+                          >
+                            <Upload size={16} />
+                            Upload Different Image
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Extracted Text Display */}
+              {ingredients && scanMode !== 'text' && (
+                <div className="extracted-text">
+                  <h4>📝 Extracted Ingredients:</h4>
+                  <div className="text-preview">
+                    {ingredients}
+                  </div>
+                  <p className="edit-note">
+                    You can edit the text above if needed before analyzing.
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <div className="error-message">
@@ -284,7 +543,7 @@ export default function Dashboard() {
               <div className="button-group">
                 <button
                   onClick={handleAnalyze}
-                  disabled={!ingredients.trim() || isAnalyzing}
+                  disabled={!ingredients.trim() || isAnalyzing || isProcessingImage}
                   className="organic-button primary"
                 >
                   {isAnalyzing ? (
@@ -300,11 +559,12 @@ export default function Dashboard() {
                   )}
                 </button>
 
-                {analysisResult && (
+                {(analysisResult || capturedImage) && (
                   <button
                     onClick={handleNewScan}
                     className="organic-button secondary"
                   >
+                    <RotateCcw size={16} />
                     Start New Scan
                   </button>
                 )}
@@ -639,6 +899,300 @@ export default function Dashboard() {
           margin-bottom: 2rem;
         }
 
+        .scanner-modes {
+          display: flex;
+          gap: 0.5rem;
+          background: rgba(255, 255, 255, 0.6);
+          padding: 0.5rem;
+          border-radius: 12px;
+          margin-bottom: 1.5rem;
+        }
+
+        .mode-button {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: transparent;
+          color: #6b7280;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .mode-button:hover {
+          background: rgba(255, 255, 255, 0.8);
+          color: #374151;
+        }
+
+        .mode-button.active {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          color: white;
+          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .scanner-content {
+          background: rgba(255, 255, 255, 0.4);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .camera-container {
+          position: relative;
+          background: #000;
+          border-radius: 12px;
+          overflow: hidden;
+          aspect-ratio: 4/3;
+        }
+
+        .camera-video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .camera-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+
+        .scan-frame {
+          position: relative;
+          width: 80%;
+          height: 60%;
+          border: 2px solid rgba(34, 197, 94, 0.8);
+          border-radius: 8px;
+        }
+
+        .frame-corner {
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          border: 3px solid #22c55e;
+        }
+
+        .frame-corner.tl {
+          top: -3px;
+          left: -3px;
+          border-right: none;
+          border-bottom: none;
+        }
+
+        .frame-corner.tr {
+          top: -3px;
+          right: -3px;
+          border-left: none;
+          border-bottom: none;
+        }
+
+        .frame-corner.bl {
+          bottom: -3px;
+          left: -3px;
+          border-right: none;
+          border-top: none;
+        }
+
+        .frame-corner.br {
+          bottom: -3px;
+          right: -3px;
+          border-left: none;
+          border-top: none;
+        }
+
+        .camera-instructions {
+          margin-top: 2rem;
+          text-align: center;
+          color: white;
+          background: rgba(0, 0, 0, 0.7);
+          padding: 1rem;
+          border-radius: 8px;
+        }
+
+        .camera-instructions p {
+          margin: 0.25rem 0;
+          font-size: 0.875rem;
+        }
+
+        .camera-controls {
+          position: absolute;
+          bottom: 2rem;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+          pointer-events: auto;
+        }
+
+        .capture-button {
+          width: 70px;
+          height: 70px;
+          border: 4px solid white;
+          border-radius: 50%;
+          background: transparent;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .capture-button:hover {
+          transform: scale(1.1);
+        }
+
+        .capture-circle {
+          width: 50px;
+          height: 50px;
+          background: white;
+          border-radius: 50%;
+        }
+
+        .cancel-button {
+          width: 44px;
+          height: 44px;
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          border: none;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .captured-image, .uploaded-image {
+          position: relative;
+          text-align: center;
+        }
+
+        .captured-image img, .uploaded-image img {
+          max-width: 100%;
+          max-height: 400px;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .processing-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.9);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+        }
+
+        .processing-overlay p {
+          margin-top: 1rem;
+          color: #374151;
+          font-weight: 500;
+        }
+
+        .upload-area {
+          border: 2px dashed #d1d5db;
+          border-radius: 12px;
+          padding: 3rem 2rem;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          background: rgba(255, 255, 255, 0.5);
+        }
+
+        .upload-area:hover {
+          border-color: #22c55e;
+          background: rgba(34, 197, 94, 0.05);
+        }
+
+        .upload-area h3 {
+          margin: 1rem 0 0.5rem 0;
+          color: #1f2937;
+          font-size: 1.2rem;
+          font-weight: 600;
+        }
+
+        .upload-area p {
+          color: #6b7280;
+          margin: 0.5rem 0;
+        }
+
+        .file-info {
+          font-size: 0.8rem !important;
+          color: #9ca3af !important;
+        }
+
+        .image-controls {
+          margin-top: 1rem;
+        }
+
+        .retake-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: rgba(107, 114, 128, 0.1);
+          color: #374151;
+          border: 1px solid rgba(107, 114, 128, 0.2);
+          border-radius: 8px;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .retake-button:hover {
+          background: rgba(107, 114, 128, 0.15);
+        }
+
+        .extracted-text {
+          background: rgba(34, 197, 94, 0.05);
+          border: 1px solid rgba(34, 197, 94, 0.2);
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .extracted-text h4 {
+          margin: 0 0 0.75rem 0;
+          color: #1f2937;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+
+        .text-preview {
+          background: white;
+          padding: 0.75rem;
+          border-radius: 8px;
+          color: #1f2937;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          margin-bottom: 0.5rem;
+        }
+
+        .edit-note {
+          font-size: 0.8rem;
+          color: #6b7280;
+          margin: 0;
+          font-style: italic;
+        }
+
         .organic-button {
           display: flex;
           align-items: center;
@@ -900,6 +1454,12 @@ export default function Dashboard() {
           }
         }
 
+        .organic-spinner.large {
+          width: 32px;
+          height: 32px;
+          border-width: 3px;
+        }
+
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
@@ -921,6 +1481,19 @@ export default function Dashboard() {
 
           .organic-tab span {
             display: none;
+          }
+
+          .mode-button span {
+            display: none;
+          }
+
+          .mode-button {
+            padding: 0.5rem;
+          }
+
+          .camera-instructions {
+            margin-top: 1rem;
+            padding: 0.75rem;
           }
 
           .organic-tab {

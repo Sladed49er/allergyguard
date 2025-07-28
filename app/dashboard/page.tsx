@@ -3,7 +3,30 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf } from 'lucide-react';
+import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
+
+// Types for AI analysis results
+interface AllergenAnalysis {
+  isProblematic: boolean;
+  detectedAllergens: string[];
+  analysis: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  recommendations: string[];
+  ingredientHighlights: {
+    safe: string[];
+    concerning: string[];
+    problematic: string[];
+  };
+  scanDate?: string;
+  familyAllergiesChecked?: string[];
+}
+
+interface AnalysisResponse {
+  success: boolean;
+  scanId: string;
+  analysis: AllergenAnalysis;
+  error?: string;
+}
 
 // Floating particle component with organic feel
 const FloatingParticle = ({ icon: Icon, delay, duration, startY }: { 
@@ -23,7 +46,7 @@ const FloatingParticle = ({ icon: Icon, delay, duration, startY }: {
         fontSize: `${14 + Math.random() * 6}px`,
         top: `${startY}%`,
         left: '-2rem',
-        color: `rgba(34, 197, 94, ${0.3 + Math.random() * 0.4})`, // Green variations
+        color: `rgba(34, 197, 94, ${0.3 + Math.random() * 0.4})`,
       } as any}
     >
       <Icon />
@@ -31,12 +54,47 @@ const FloatingParticle = ({ icon: Icon, delay, duration, startY }: {
   )
 }
 
+// Risk Level Badge Component
+const RiskBadge = ({ level }: { level: string }) => {
+  const getRiskStyles = (level: string) => {
+    switch (level) {
+      case 'LOW':
+        return { bg: 'rgba(34, 197, 94, 0.1)', color: '#059669', border: 'rgba(34, 197, 94, 0.3)' };
+      case 'MEDIUM':
+        return { bg: 'rgba(251, 191, 36, 0.1)', color: '#d97706', border: 'rgba(251, 191, 36, 0.3)' };
+      case 'HIGH':
+        return { bg: 'rgba(249, 115, 22, 0.1)', color: '#ea580c', border: 'rgba(249, 115, 22, 0.3)' };
+      case 'CRITICAL':
+        return { bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: 'rgba(239, 68, 68, 0.3)' };
+      default:
+        return { bg: 'rgba(107, 114, 128, 0.1)', color: '#6b7280', border: 'rgba(107, 114, 128, 0.3)' };
+    }
+  };
+
+  const styles = getRiskStyles(level);
+  
+  return (
+    <span 
+      className="risk-badge"
+      style={{
+        background: styles.bg,
+        color: styles.color,
+        border: `1px solid ${styles.border}`
+      }}
+    >
+      {level} RISK
+    </span>
+  );
+};
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('scanner');
   const [ingredients, setIngredients] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AllergenAnalysis | null>(null);
+  const [error, setError] = useState('');
 
   // Organic food-related icons for floating particles
   const organicIcons = [Wheat, Milk, Fish, Nut, Leaf];
@@ -53,10 +111,10 @@ export default function Dashboard() {
   // Show loading screen while checking authentication
   if (status === 'loading') {
     return (
-      <div className="page-container">
-        <div className="content-wrapper fade-in">
-          <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
+      <div className="organic-page">
+        <div className="organic-content">
+          <div className="organic-card" style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className="organic-spinner" style={{ margin: '0 auto 1rem' }} />
             <p style={{ color: '#6b7280' }}>Loading your dashboard...</p>
           </div>
         </div>
@@ -71,15 +129,53 @@ export default function Dashboard() {
   };
 
   const handleAnalyze = async () => {
-    if (!ingredients.trim()) return;
+    if (!ingredients.trim()) {
+      setError('Please enter some ingredients to analyze');
+      return;
+    }
     
     setIsAnalyzing(true);
-    // TODO: Implement AI analysis
-    setTimeout(() => {
+    setError('');
+    setAnalysisResult(null);
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ingredients: ingredients.trim()
+        }),
+      });
+
+      const data: AnalysisResponse = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze ingredients');
+      }
+
+      if (data.success && data.analysis) {
+        setAnalysisResult(data.analysis);
+        // Scroll to results
+        setTimeout(() => {
+          document.getElementById('analysis-results')?.scrollIntoView({ 
+            behavior: 'smooth' 
+          });
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to analyze ingredients');
+    } finally {
       setIsAnalyzing(false);
-      // Mock response for now
-      alert('AI Analysis coming soon! Integration with OpenAI API pending.');
-    }, 2000);
+    }
+  };
+
+  const handleNewScan = () => {
+    setIngredients('');
+    setAnalysisResult(null);
+    setError('');
   };
 
   const tabs = [
@@ -174,26 +270,124 @@ export default function Dashboard() {
                   className="organic-textarea"
                   placeholder="Paste ingredient list here... (e.g., Enriched Wheat Flour, Sugar, Palm Oil, Eggs, Milk Powder, Vanilla Extract, Salt)"
                   rows={6}
+                  disabled={isAnalyzing}
                 />
               </div>
 
-              <button
-                onClick={handleAnalyze}
-                disabled={!ingredients.trim() || isAnalyzing}
-                className="organic-button primary"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <div className="organic-spinner" />
-                    Analyzing ingredients...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} />
-                    Analyze Ingredients with AI
-                  </>
+              {error && (
+                <div className="error-message">
+                  <XCircle size={16} />
+                  {error}
+                </div>
+              )}
+
+              <div className="button-group">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!ingredients.trim() || isAnalyzing}
+                  className="organic-button primary"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <div className="organic-spinner" />
+                      Analyzing ingredients...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={18} />
+                      Analyze Ingredients with AI
+                    </>
+                  )}
+                </button>
+
+                {analysisResult && (
+                  <button
+                    onClick={handleNewScan}
+                    className="organic-button secondary"
+                  >
+                    Start New Scan
+                  </button>
                 )}
-              </button>
+              </div>
+
+              {/* Analysis Results */}
+              {analysisResult && (
+                <div id="analysis-results" className="analysis-results">
+                  <div className="results-header">
+                    <h3>Analysis Results</h3>
+                    <RiskBadge level={analysisResult.riskLevel} />
+                  </div>
+
+                  {/* Main Analysis */}
+                  <div className="analysis-section">
+                    <div className="analysis-icon">
+                      {analysisResult.isProblematic ? (
+                        <AlertTriangle size={24} style={{ color: '#dc2626' }} />
+                      ) : (
+                        <CheckCircle size={24} style={{ color: '#059669' }} />
+                      )}
+                    </div>
+                    <div className="analysis-text">
+                      <h4>{analysisResult.isProblematic ? 'Allergens Detected' : 'Safe for Family'}</h4>
+                      <p>{analysisResult.analysis}</p>
+                    </div>
+                  </div>
+
+                  {/* Detected Allergens */}
+                  {analysisResult.detectedAllergens.length > 0 && (
+                    <div className="allergen-list">
+                      <h4>Detected Allergens:</h4>
+                      <div className="allergen-tags">
+                        {analysisResult.detectedAllergens.map((allergen, index) => (
+                          <span key={index} className="allergen-tag">
+                            {allergen}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  {analysisResult.recommendations.length > 0 && (
+                    <div className="recommendations">
+                      <h4>Recommendations:</h4>
+                      <ul>
+                        {analysisResult.recommendations.map((rec, index) => (
+                          <li key={index}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Ingredient Highlights */}
+                  {analysisResult.ingredientHighlights && (
+                    <div className="ingredient-highlights">
+                      <h4>Ingredient Analysis:</h4>
+                      
+                      {analysisResult.ingredientHighlights.problematic.length > 0 && (
+                        <div className="highlight-section problematic">
+                          <strong>⚠️ Problematic:</strong>
+                          <span>{analysisResult.ingredientHighlights.problematic.join(', ')}</span>
+                        </div>
+                      )}
+                      
+                      {analysisResult.ingredientHighlights.concerning.length > 0 && (
+                        <div className="highlight-section concerning">
+                          <strong>⚡ Concerning:</strong>
+                          <span>{analysisResult.ingredientHighlights.concerning.join(', ')}</span>
+                        </div>
+                      )}
+                      
+                      {analysisResult.ingredientHighlights.safe.length > 0 && (
+                        <div className="highlight-section safe">
+                          <strong>✅ Safe:</strong>
+                          <span>{analysisResult.ingredientHighlights.safe.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -430,8 +624,19 @@ export default function Dashboard() {
           background: white;
         }
 
+        .organic-textarea:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
         .organic-textarea::placeholder {
           color: #9ca3af;
+        }
+
+        .button-group {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
         }
 
         .organic-button {
@@ -439,7 +644,6 @@ export default function Dashboard() {
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          width: 100%;
           padding: 1rem 1.5rem;
           border: none;
           border-radius: 12px;
@@ -448,6 +652,7 @@ export default function Dashboard() {
           cursor: pointer;
           transition: all 0.2s ease;
           text-align: center;
+          flex: 1;
         }
 
         .organic-button.primary {
@@ -459,6 +664,17 @@ export default function Dashboard() {
         .organic-button.primary:hover:not(:disabled) {
           transform: translateY(-2px);
           box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .organic-button.secondary {
+          background: rgba(107, 114, 128, 0.1);
+          color: #374151;
+          border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+
+        .organic-button.secondary:hover {
+          background: rgba(107, 114, 128, 0.15);
+          transform: translateY(-1px);
         }
 
         .organic-button:disabled {
@@ -474,6 +690,165 @@ export default function Dashboard() {
           border-top: 2px solid white;
           border-radius: 50%;
           animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          margin-bottom: 1rem;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .analysis-results {
+          background: rgba(255, 255, 255, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin-top: 2rem;
+        }
+
+        .results-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+        }
+
+        .results-header h3 {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .risk-badge {
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .analysis-section {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .analysis-icon {
+          flex-shrink: 0;
+        }
+
+        .analysis-text h4 {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .analysis-text p {
+          color: #6b7280;
+          margin: 0;
+          line-height: 1.6;
+        }
+
+        .allergen-list {
+          margin-bottom: 1.5rem;
+        }
+
+        .allergen-list h4 {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 0.75rem 0;
+        }
+
+        .allergen-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .allergen-tag {
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .recommendations {
+          margin-bottom: 1.5rem;
+        }
+
+        .recommendations h4 {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 0.75rem 0;
+        }
+
+        .recommendations ul {
+          margin: 0;
+          padding-left: 1.5rem;
+          color: #6b7280;
+        }
+
+        .recommendations li {
+          margin-bottom: 0.5rem;
+          line-height: 1.5;
+        }
+
+        .ingredient-highlights h4 {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0 0 0.75rem 0;
+        }
+
+        .highlight-section {
+          display: flex;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
+          padding: 0.75rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+        }
+
+        .highlight-section.problematic {
+          background: rgba(239, 68, 68, 0.05);
+          border: 1px solid rgba(239, 68, 68, 0.1);
+        }
+
+        .highlight-section.concerning {
+          background: rgba(251, 191, 36, 0.05);
+          border: 1px solid rgba(251, 191, 36, 0.1);
+        }
+
+        .highlight-section.safe {
+          background: rgba(34, 197, 94, 0.05);
+          border: 1px solid rgba(34, 197, 94, 0.1);
+        }
+
+        .highlight-section strong {
+          color: #1f2937;
+          white-space: nowrap;
+        }
+
+        .highlight-section span {
+          color: #6b7280;
+          line-height: 1.4;
         }
 
         .coming-soon {
@@ -559,6 +934,26 @@ export default function Dashboard() {
           .section-header {
             flex-direction: column;
             align-items: flex-start;
+            gap: 0.5rem;
+          }
+
+          .button-group {
+            flex-direction: column;
+          }
+
+          .analysis-section {
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+
+          .results-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+
+          .highlight-section {
+            flex-direction: column;
             gap: 0.5rem;
           }
         }

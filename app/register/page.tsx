@@ -110,7 +110,7 @@ export default function RegisterPage() {
     setError('')
   }
 
-  // Floating allergen particles (same as login)
+  // Floating allergen particles
   const allergenParticles = [
     { icon: '🌾', delay: '0s', duration: '8s' },
     { icon: '🥛', delay: '1s', duration: '10s' },
@@ -123,13 +123,30 @@ export default function RegisterPage() {
   return (
     <>
       <style jsx>{`
-        .glass-card {
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+        .page-container {
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%);
+        }
+        
+        .background-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(circle at 50% 50%, rgba(120,119,198,0.3), transparent 50%);
         }
         
         .floating-particle {
+          position: absolute;
+          font-size: 1.5rem;
+          opacity: 0.2;
+          pointer-events: none;
           animation: float 8s ease-in-out infinite;
         }
         
@@ -139,24 +156,270 @@ export default function RegisterPage() {
           50% { transform: translateY(-10px) rotate(-5deg); }
           75% { transform: translateY(-30px) rotate(3deg); }
         }
+        
+        .form-container {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 400px;
+          margin: 0 auto;
+          padding: 0 1rem;
+        }
+        
+        .glass-card {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          padding: 2rem;
+          border-radius: 1rem;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+        
+        .icon-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1rem;
+        }
+        
+        .icon-circle {
+          padding: 0.75rem;
+          border-radius: 9999px;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+        
+        .title {
+          font-size: 1.875rem;
+          font-weight: bold;
+          color: white;
+          margin-bottom: 0.5rem;
+          margin: 0;
+        }
+        
+        .subtitle {
+          color: #d1d5db;
+          margin: 0;
+        }
+        
+        .form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .label {
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: #e5e7eb;
+        }
+        
+        .input {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 0.5rem;
+          color: white;
+          font-size: 1rem;
+          transition: all 0.2s;
+          box-sizing: border-box;
+        }
+        
+        .input::placeholder {
+          color: #9ca3af;
+        }
+        
+        .input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        
+        .input-container {
+          position: relative;
+        }
+        
+        .input-with-icon {
+          padding-right: 3rem;
+        }
+        
+        .input-icon {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #9ca3af;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        
+        .input-icon:hover {
+          color: white;
+        }
+        
+        .password-strength {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        
+        .strength-bar-container {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .strength-bar {
+          flex: 1;
+          height: 0.5rem;
+          background: #374151;
+          border-radius: 9999px;
+        }
+        
+        .strength-fill {
+          height: 100%;
+          border-radius: 9999px;
+          transition: all 0.3s;
+        }
+        
+        .strength-text {
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+        
+        .strength-feedback {
+          font-size: 0.75rem;
+          color: #9ca3af;
+        }
+        
+        .confirm-input {
+          padding-right: 5rem;
+        }
+        
+        .confirm-icons {
+          position: absolute;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .match-icon {
+          color: #22c55e;
+        }
+        
+        .no-match-icon {
+          color: #ef4444;
+        }
+        
+        .error-message {
+          padding: 0.75rem;
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid rgba(239, 68, 68, 0.5);
+          border-radius: 0.5rem;
+          color: #fecaca;
+          font-size: 0.875rem;
+        }
+        
+        .submit-button {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          color: white;
+          font-weight: 600;
+          border: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-size: 1rem;
+        }
+        
+        .submit-button:hover:not(:disabled) {
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          transform: scale(1.02);
+        }
+        
+        .submit-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: rgba(107, 114, 128, 0.5);
+          transform: none;
+        }
+        
+        .spinner {
+          width: 1.25rem;
+          height: 1.25rem;
+          border: 2px solid transparent;
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+          margin-top: 1.5rem;
+          text-align: center;
+        }
+        
+        .footer-text {
+          color: #d1d5db;
+          margin: 0;
+        }
+        
+        .footer-link {
+          color: #60a5fa;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+          color: #93c5fd;
+        }
+        
+        .validation-error {
+          font-size: 0.75rem;
+          color: #fca5a5;
+        }
+        
+        .input-success {
+          border-color: #22c55e;
+        }
+        
+        .input-error {
+          border-color: #ef4444;
+        }
       `}</style>
       
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #581c87 50%, #0f172a 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        {/* Animated Background Overlay */}
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(120,119,198,0.3), transparent 50%)'
-        }} />
-
+      <div className="page-container">
+        <div className="background-overlay" />
+        
         {/* Floating Allergen Particles */}
         {allergenParticles.map((particle, index) => (
           <div
             key={index}
-            className="absolute text-2xl opacity-20 pointer-events-none floating-particle"
+            className="floating-particle"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -168,36 +431,24 @@ export default function RegisterPage() {
           </div>
         ))}
 
-        {/* Registration Form */}
-        <div className="relative z-10 w-full max-w-md mx-auto px-4">
-          <div className="glass-card p-8 rounded-2xl shadow-2xl" style={{
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            margin: '0 auto'
-          }}>
+        <div className="form-container">
+          <div className="glass-card">
             {/* Header */}
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <div className="p-3 rounded-full" style={{
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
-                }}>
-                  <Shield className="h-8 w-8 text-white" />
+            <div className="header">
+              <div className="icon-container">
+                <div className="icon-circle">
+                  <Shield size={32} color="white" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                Join AllergyGuard
-              </h1>
-              <p className="text-gray-300">
-                Create your account to protect your family
-              </p>
+              <h1 className="title">Join AllergyGuard</h1>
+              <p className="subtitle">Create your account to protect your family</p>
             </div>
 
             {/* Registration Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="form">
               {/* Name Field */}
-              <div className="space-y-2">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-200">
-                  Full Name
-                </label>
+              <div className="form-group">
+                <label htmlFor="name" className="label">Full Name</label>
                 <input
                   id="name"
                   name="name"
@@ -205,20 +456,14 @@ export default function RegisterPage() {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 border transition-all duration-200"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                  }}
+                  className="input"
                   placeholder="Enter your full name"
                 />
               </div>
 
               {/* Email Field */}
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-200">
-                  Email Address
-                </label>
+              <div className="form-group">
+                <label htmlFor="email" className="label">Email Address</label>
                 <input
                   id="email"
                   name="email"
@@ -226,21 +471,15 @@ export default function RegisterPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-400 border transition-all duration-200"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                  }}
+                  className="input"
                   placeholder="Enter your email"
                 />
               </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-200">
-                  Password
-                </label>
-                <div className="relative">
+              <div className="form-group">
+                <label htmlFor="password" className="label">Password</label>
+                <div className="input-container">
                   <input
                     id="password"
                     name="password"
@@ -248,36 +487,28 @@ export default function RegisterPage() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 pr-12 rounded-lg text-white placeholder-gray-400 border transition-all duration-200"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                    }}
+                    className="input input-with-icon"
                     placeholder="Create a strong password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+                  <div className="input-icon" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </div>
                 </div>
 
                 {/* Password Strength Indicator */}
                 {formData.password && (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-700 rounded-full h-2">
+                  <div className="password-strength">
+                    <div className="strength-bar-container">
+                      <div className="strength-bar">
                         <div
-                          className="h-2 rounded-full transition-all duration-300"
+                          className="strength-fill"
                           style={{
                             width: `${(passwordStrength.score / 5) * 100}%`,
                             backgroundColor: passwordStrength.color,
                           }}
                         />
                       </div>
-                      <span className="text-xs font-medium" style={{ color: passwordStrength.color }}>
+                      <span className="strength-text" style={{ color: passwordStrength.color }}>
                         {passwordStrength.score === 0 && 'Very Weak'}
                         {passwordStrength.score === 1 && 'Weak'}
                         {passwordStrength.score === 2 && 'Fair'}
@@ -287,7 +518,7 @@ export default function RegisterPage() {
                       </span>
                     </div>
                     {passwordStrength.feedback.length > 0 && (
-                      <div className="text-xs text-gray-400">
+                      <div className="strength-feedback">
                         Missing: {passwordStrength.feedback.join(', ')}
                       </div>
                     )}
@@ -296,11 +527,9 @@ export default function RegisterPage() {
               </div>
 
               {/* Confirm Password Field */}
-              <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
-                  Confirm Password
-                </label>
-                <div className="relative">
+              <div className="form-group">
+                <label htmlFor="confirmPassword" className="label">Confirm Password</label>
+                <div className="input-container">
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
@@ -308,63 +537,49 @@ export default function RegisterPage() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 pr-12 rounded-lg text-white placeholder-gray-400 border transition-all duration-200"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      border: formData.confirmPassword
+                    className={`input confirm-input ${
+                      formData.confirmPassword
                         ? passwordsMatch
-                          ? '1px solid #22c55e'
-                          : '1px solid #ef4444'
-                        : '1px solid rgba(255, 255, 255, 0.2)',
-                    }}
+                          ? 'input-success'
+                          : 'input-error'
+                        : ''
+                    }`}
                     placeholder="Confirm your password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-200"
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                  {formData.confirmPassword && (
-                    <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                      {passwordsMatch ? (
-                        <Check className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <X className="h-5 w-5 text-red-500" />
-                      )}
+                  <div className="confirm-icons">
+                    {formData.confirmPassword && (
+                      <div>
+                        {passwordsMatch ? (
+                          <Check size={20} className="match-icon" />
+                        ) : (
+                          <X size={20} className="no-match-icon" />
+                        )}
+                      </div>
+                    )}
+                    <div className="input-icon" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </div>
-                  )}
+                  </div>
                 </div>
                 {formData.confirmPassword && !passwordsMatch && (
-                  <p className="text-xs text-red-400">Passwords do not match</p>
+                  <div className="validation-error">Passwords do not match</div>
                 )}
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-lg" style={{
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  border: '1px solid rgba(239, 68, 68, 0.5)'
-                }}>
-                  <p className="text-red-200 text-sm">{error}</p>
-                </div>
+                <div className="error-message">{error}</div>
               )}
 
               {/* Register Button */}
               <button
                 type="submit"
                 disabled={loading || !passwordsMatch || passwordStrength.score < 3}
-                className="w-full py-3 px-4 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
-                style={{
-                  background: loading || !passwordsMatch || passwordStrength.score < 3 
-                    ? 'rgba(107, 114, 128, 0.5)' 
-                    : 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                }}
+                className="submit-button"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="spinner"></div>
                     <span>Creating Account...</span>
                   </>
                 ) : (
@@ -373,14 +588,11 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            {/* Sign In Link */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-300">
+            {/* Footer */}
+            <div className="footer">
+              <p className="footer-text">
                 Already have an account?{' '}
-                <Link
-                  href="/login"
-                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
-                >
+                <Link href="/login" className="footer-link">
                   Sign in here
                 </Link>
               </p>

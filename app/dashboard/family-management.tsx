@@ -595,16 +595,18 @@ export const FamilyManagement = () => {
         }
 
         .modal-content {
-          background: white;
+          background: #ffffff;
           border-radius: 16px;
           max-width: 500px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .add-member-form {
           padding: 2rem;
+          color: #1f2937;
         }
 
         .form-header {
@@ -659,12 +661,13 @@ export const FamilyManagement = () => {
         .form-input {
           width: 100%;
           padding: 0.75rem;
-          background: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(209, 213, 219, 0.8);
+          background: #f9fafb;
+          border: 1px solid #d1d5db;
           border-radius: 8px;
           color: #1f2937;
           font-size: 0.9rem;
           transition: all 0.2s ease;
+          font-family: inherit;
         }
 
         .form-input:focus {
@@ -682,18 +685,20 @@ export const FamilyManagement = () => {
 
         .allergy-chip {
           padding: 0.5rem 0.75rem;
-          background: rgba(107, 114, 128, 0.1);
+          background: #f3f4f6;
           color: #374151;
-          border: 1px solid rgba(107, 114, 128, 0.2);
+          border: 1px solid #d1d5db;
           border-radius: 20px;
           font-size: 0.8rem;
           cursor: pointer;
           transition: all 0.2s ease;
           text-align: center;
+          font-weight: 500;
         }
 
         .allergy-chip:hover {
-          background: rgba(107, 114, 128, 0.15);
+          background: #e5e7eb;
+          border-color: #9ca3af;
         }
 
         .allergy-chip.selected {
@@ -709,18 +714,20 @@ export const FamilyManagement = () => {
 
         .add-custom-btn {
           padding: 0.75rem 1rem;
-          background: rgba(107, 114, 128, 0.1);
+          background: #f3f4f6;
           color: #374151;
-          border: 1px solid rgba(107, 114, 128, 0.2);
+          border: 1px solid #d1d5db;
           border-radius: 8px;
           font-size: 0.9rem;
           cursor: pointer;
           transition: all 0.2s ease;
           white-space: nowrap;
+          font-weight: 500;
         }
 
         .add-custom-btn:hover {
-          background: rgba(107, 114, 128, 0.15);
+          background: #e5e7eb;
+          border-color: #9ca3af;
         }
 
         .save-btn {

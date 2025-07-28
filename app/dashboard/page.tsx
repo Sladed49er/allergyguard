@@ -939,7 +939,7 @@ export default function Dashboard() {
         .scanner-content {
           background: rgba(255, 255, 255, 0.4);
           border-radius: 16px;
-          padding: 1.5rem;
+          padding: 1rem;
           margin-bottom: 1.5rem;
         }
 
@@ -948,7 +948,9 @@ export default function Dashboard() {
           background: #000;
           border-radius: 12px;
           overflow: hidden;
-          aspect-ratio: 4/3;
+          width: 100%;
+          height: 70vh;
+          min-height: 400px;
         }
 
         .camera-video {
@@ -972,54 +974,55 @@ export default function Dashboard() {
 
         .scan-frame {
           position: relative;
-          width: 80%;
-          height: 60%;
+          width: 90%;
+          height: 40%;
           border: 2px solid rgba(34, 197, 94, 0.8);
           border-radius: 8px;
         }
 
         .frame-corner {
           position: absolute;
-          width: 20px;
-          height: 20px;
-          border: 3px solid #22c55e;
+          width: 25px;
+          height: 25px;
+          border: 4px solid #22c55e;
         }
 
         .frame-corner.tl {
-          top: -3px;
-          left: -3px;
+          top: -4px;
+          left: -4px;
           border-right: none;
           border-bottom: none;
         }
 
         .frame-corner.tr {
-          top: -3px;
-          right: -3px;
+          top: -4px;
+          right: -4px;
           border-left: none;
           border-bottom: none;
         }
 
         .frame-corner.bl {
-          bottom: -3px;
-          left: -3px;
+          bottom: -4px;
+          left: -4px;
           border-right: none;
           border-top: none;
         }
 
         .frame-corner.br {
-          bottom: -3px;
-          right: -3px;
+          bottom: -4px;
+          right: -4px;
           border-left: none;
           border-top: none;
         }
 
         .camera-instructions {
-          margin-top: 2rem;
+          margin-top: 1rem;
           text-align: center;
           color: white;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 1rem;
+          background: rgba(0, 0, 0, 0.8);
+          padding: 0.75rem 1rem;
           border-radius: 8px;
+          max-width: 280px;
         }
 
         .camera-instructions p {
@@ -1039,9 +1042,9 @@ export default function Dashboard() {
         }
 
         .capture-button {
-          width: 70px;
-          height: 70px;
-          border: 4px solid white;
+          width: 80px;
+          height: 80px;
+          border: 5px solid white;
           border-radius: 50%;
           background: transparent;
           cursor: pointer;
@@ -1052,22 +1055,22 @@ export default function Dashboard() {
         }
 
         .capture-button:hover {
-          transform: scale(1.1);
+          transform: scale(1.05);
         }
 
         .capture-circle {
-          width: 50px;
-          height: 50px;
+          width: 60px;
+          height: 60px;
           background: white;
           border-radius: 50%;
         }
 
         .cancel-button {
-          width: 44px;
-          height: 44px;
-          background: rgba(0, 0, 0, 0.7);
+          width: 50px;
+          height: 50px;
+          background: rgba(0, 0, 0, 0.8);
           color: white;
-          border: none;
+          border: 2px solid white;
           border-radius: 50%;
           cursor: pointer;
           display: flex;
@@ -1491,9 +1494,19 @@ export default function Dashboard() {
             padding: 0.5rem;
           }
 
+          .camera-container {
+            height: 60vh;
+            min-height: 350px;
+          }
+
           .camera-instructions {
-            margin-top: 1rem;
-            padding: 0.75rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            max-width: 240px;
+          }
+
+          .camera-instructions p {
+            font-size: 0.8rem;
           }
 
           .organic-tab {

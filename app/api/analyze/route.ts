@@ -55,16 +55,10 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         ingredients: ingredients.trim(),
         analysis: analysis.analysis,
-        detectedAllergies: analysis.detectedAllergens, // Note: schema uses detectedAllergies
+        detectedAllergies: analysis.detectedAllergens,
         riskLevel: analysis.riskLevel,
         isProblematic: analysis.isProblematic,
-        recommendations: analysis.recommendations,
-        // Store additional data as JSON for now
-        metadata: JSON.stringify({
-          familyAllergies,
-          ingredientHighlights: analysis.ingredientHighlights,
-          timestamp: new Date().toISOString()
-        })
+        recommendations: analysis.recommendations
       }
     });
 

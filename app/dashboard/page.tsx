@@ -3,9 +3,9 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles } from 'lucide-react';
+import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf } from 'lucide-react';
 
-// Floating particle component (matching login page)
+// Floating particle component with organic feel
 const FloatingParticle = ({ icon: Icon, delay, duration, startY }: { 
   icon: any, 
   delay: number, 
@@ -20,9 +20,10 @@ const FloatingParticle = ({ icon: Icon, delay, duration, startY }: {
         '--duration': `${duration}s`,
         '--start-y': `${startY}vh`,
         '--end-y': `${startY + (Math.random() - 0.5) * 20}vh`,
-        fontSize: `${16 + Math.random() * 8}px`,
+        fontSize: `${14 + Math.random() * 6}px`,
         top: `${startY}%`,
         left: '-2rem',
+        color: `rgba(34, 197, 94, ${0.3 + Math.random() * 0.4})`, // Green variations
       } as any}
     >
       <Icon />
@@ -37,8 +38,8 @@ export default function Dashboard() {
   const [ingredients, setIngredients] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Allergen icons for floating particles
-  const allergenIcons = [Wheat, Milk, Fish, Nut];
+  // Organic food-related icons for floating particles
+  const organicIcons = [Wheat, Milk, Fish, Nut, Leaf];
 
   // Handle loading and authentication states
   useEffect(() => {
@@ -54,9 +55,9 @@ export default function Dashboard() {
     return (
       <div className="page-container">
         <div className="content-wrapper fade-in">
-          <div className="glass-card" style={{ textAlign: 'center', padding: 'var(--space-8)' }}>
-            <div className="loading-spinner" style={{ margin: '0 auto var(--space-4)' }} />
-            <p className="text-muted">Loading your dashboard...</p>
+          <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className="loading-spinner" style={{ margin: '0 auto 1rem' }} />
+            <p style={{ color: '#6b7280' }}>Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -87,85 +88,90 @@ export default function Dashboard() {
     { id: 'history', label: 'History', icon: History }
   ];
 
+  // Get user's first name or email prefix
+  const getUserName = () => {
+    if (session.user?.name) {
+      return session.user.name.split(' ')[0];
+    }
+    if (session.user?.email) {
+      return session.user.email.split('@')[0];
+    }
+    return '';
+  };
+
+  const userName = getUserName();
+
   return (
-    <div className="page-container">
-      {/* Floating allergen particles */}
-      {Array.from({ length: 12 }, (_, i) => (
+    <div className="organic-page">
+      {/* Floating organic particles */}
+      {Array.from({ length: 10 }, (_, i) => (
         <FloatingParticle
           key={i}
-          icon={allergenIcons[i % allergenIcons.length]}
-          delay={i * 2.5}
-          duration={15 + Math.random() * 10}
+          icon={organicIcons[i % organicIcons.length]}
+          delay={i * 3}
+          duration={20 + Math.random() * 10}
           startY={Math.random() * 100}
         />
       ))}
 
-      <div className="content-wrapper fade-in">
+      <div className="organic-content">
         {/* Header Section */}
-        <div className="header-section">
-          <div className="logo-container">
-            <ShieldCheck size={32} color="white" />
+        <div className="organic-header">
+          <div className="logo-section">
+            <div className="organic-logo">
+              <ShieldCheck size={28} />
+            </div>
+            <div className="welcome-text">
+              <h1>Welcome back{userName ? `, ${userName}` : ''}! 🏡</h1>
+              <p>Keep your family safe with natural, AI-powered allergen detection</p>
+            </div>
           </div>
-          
-          <h1 className="app-title">
-            Welcome back{session.user?.name ? `, ${session.user.name.split(' ')[0]}` : ''}!
-          </h1>
-          <p className="app-subtitle">
-            Keep your family safe with AI-powered allergen detection
-          </p>
 
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="logout-btn"
-            aria-label="Sign out"
-          >
-            <LogOut size={18} />
+          <button onClick={handleLogout} className="organic-logout-btn">
+            <LogOut size={16} />
             <span>Sign Out</span>
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="glass-card" style={{ padding: 'var(--space-2)', marginBottom: 'var(--space-6)' }}>
-          <div className="tab-navigation">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`tab-button ${activeTab === tab.id ? 'tab-button-active' : ''}`}
-                >
-                  <Icon size={20} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="organic-tabs">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`organic-tab ${activeTab === tab.id ? 'active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Main Content */}
-        <div className="glass-card">
+        <div className="organic-card">
           {activeTab === 'scanner' && (
             <div>
               <div className="section-header">
-                <Search size={24} />
+                <Search size={22} />
                 <h2>AI Ingredient Scanner</h2>
               </div>
               
-              <p className="text-muted" style={{ marginBottom: 'var(--space-6)' }}>
-                Paste ingredient lists below and get instant allergen analysis for your family
+              <p className="section-description">
+                Paste ingredient lists below and get instant allergen analysis for your family 🔍
               </p>
               
-              <div className="form-group">
-                <label htmlFor="ingredients" className="form-label">
+              <div className="input-group">
+                <label htmlFor="ingredients" className="organic-label">
                   Ingredient List
                 </label>
                 <textarea
                   id="ingredients"
                   value={ingredients}
                   onChange={(e) => setIngredients(e.target.value)}
-                  className="form-textarea"
+                  className="organic-textarea"
                   placeholder="Paste ingredient list here... (e.g., Enriched Wheat Flour, Sugar, Palm Oil, Eggs, Milk Powder, Vanilla Extract, Salt)"
                   rows={6}
                 />
@@ -174,16 +180,16 @@ export default function Dashboard() {
               <button
                 onClick={handleAnalyze}
                 disabled={!ingredients.trim() || isAnalyzing}
-                className="btn btn-primary btn-full"
+                className="organic-button primary"
               >
                 {isAnalyzing ? (
                   <>
-                    <div className="loading-spinner" />
+                    <div className="organic-spinner" />
                     Analyzing ingredients...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={20} />
+                    <Sparkles size={18} />
                     Analyze Ingredients with AI
                   </>
                 )}
@@ -194,21 +200,18 @@ export default function Dashboard() {
           {activeTab === 'family' && (
             <div>
               <div className="section-header">
-                <Users size={24} />
+                <Users size={22} />
                 <h2>Family Management</h2>
               </div>
               
-              <p className="text-muted" style={{ marginBottom: 'var(--space-6)' }}>
-                Manage your family members and their allergies
+              <p className="section-description">
+                Manage your family members and their allergies 👨‍👩‍👧‍👦
               </p>
               
               <div className="coming-soon">
-                <div className="coming-soon-icon">👨‍👩‍👧‍👦</div>
-                <h3>Family Management</h3>
-                <p className="text-muted">
-                  Add family members, manage their allergies, and set severity levels.
-                  Coming soon in the next update!
-                </p>
+                <div className="coming-soon-icon">🌱</div>
+                <h3>Family Profiles</h3>
+                <p>Add family members, manage their allergies, and set severity levels. Growing soon!</p>
               </div>
             </div>
           )}
@@ -216,21 +219,18 @@ export default function Dashboard() {
           {activeTab === 'history' && (
             <div>
               <div className="section-header">
-                <History size={24} />
+                <History size={22} />
                 <h2>Scan History</h2>
               </div>
               
-              <p className="text-muted" style={{ marginBottom: 'var(--space-6)' }}>
-                View your previous ingredient analyses and safety assessments
+              <p className="section-description">
+                View your previous ingredient analyses and safety assessments 📊
               </p>
               
               <div className="coming-soon">
-                <div className="coming-soon-icon">📊</div>
+                <div className="coming-soon-icon">📈</div>
                 <h3>Analysis History</h3>
-                <p className="text-muted">
-                  Track your scan history, filter by risk levels, and export results.
-                  Coming soon in the next update!
-                </p>
+                <p>Track your scan history, filter by risk levels, and export results. Blooming soon!</p>
               </div>
             </div>
           )}
@@ -238,136 +238,328 @@ export default function Dashboard() {
       </div>
 
       <style jsx>{`
-        .logout-btn {
-          position: absolute;
-          top: var(--space-4);
-          right: var(--space-4);
+        .organic-page {
+          min-height: 100vh;
+          background: linear-gradient(135deg, 
+            #f8fafc 0%, 
+            #f1f5f9 25%, 
+            #ecfdf5 50%, 
+            #f0fdf4 75%, 
+            #f7fee7 100%
+          );
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        .organic-content {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 2rem;
+          position: relative;
+          z-index: 10;
+        }
+
+        .organic-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 2rem;
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 20px;
+          padding: 1.5rem 2rem;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        }
+
+        .logo-section {
           display: flex;
           align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-2) var(--space-4);
-          background: rgba(239, 68, 68, 0.1);
-          color: rgb(252, 165, 165);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          border-radius: var(--border-radius);
-          font-size: var(--text-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
+          gap: 1rem;
         }
 
-        .logout-btn:hover {
-          background: rgba(239, 68, 68, 0.2);
-          border-color: rgba(239, 68, 68, 0.3);
-          transform: translateY(-1px);
-        }
-
-        .tab-navigation {
+        .organic-logo {
+          width: 50px;
+          height: 50px;
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          border-radius: 15px;
           display: flex;
-          gap: var(--space-2);
+          align-items: center;
+          justify-content: center;
+          color: white;
+          box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
         }
 
-        .tab-button {
+        .welcome-text h1 {
+          font-size: 1.8rem;
+          font-weight: 700;
+          color: #1f2937;
+          margin: 0 0 0.5rem 0;
+          line-height: 1.2;
+        }
+
+        .welcome-text p {
+          color: #6b7280;
+          margin: 0;
+          font-size: 0.95rem;
+        }
+
+        .organic-logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.25rem;
+          background: rgba(239, 68, 68, 0.1);
+          color: #dc2626;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 12px;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
+        }
+
+        .organic-logout-btn:hover {
+          background: rgba(239, 68, 68, 0.15);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .organic-tabs {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 2rem;
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 16px;
+          padding: 0.5rem;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .organic-tab {
           flex: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
+          gap: 0.5rem;
+          padding: 1rem;
           background: transparent;
-          color: var(--color-text-muted);
+          color: #6b7280;
           border: none;
-          border-radius: var(--border-radius);
-          font-size: var(--text-sm);
+          border-radius: 12px;
+          font-size: 0.875rem;
+          font-weight: 500;
           cursor: pointer;
-          transition: all var(--transition-fast);
+          transition: all 0.2s ease;
         }
 
-        .tab-button:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: var(--color-text-secondary);
+        .organic-tab:hover {
+          background: rgba(255, 255, 255, 0.8);
+          color: #374151;
+          transform: translateY(-1px);
         }
 
-        .tab-button-active {
-          background: var(--gradient-primary);
+        .organic-tab.active {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
           color: white;
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+        }
+
+        .organic-card {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          border-radius: 24px;
+          padding: 2rem;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
         }
 
         .section-header {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          margin-bottom: var(--space-4);
+          gap: 0.75rem;
+          margin-bottom: 1rem;
         }
 
         .section-header h2 {
-          font-size: var(--text-xl);
+          font-size: 1.4rem;
           font-weight: 600;
-          color: white;
+          color: #1f2937;
           margin: 0;
         }
 
-        .form-textarea {
+        .section-description {
+          color: #6b7280;
+          margin-bottom: 1.5rem;
+          font-size: 0.95rem;
+          line-height: 1.6;
+        }
+
+        .input-group {
+          margin-bottom: 1.5rem;
+        }
+
+        .organic-label {
+          display: block;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .organic-textarea {
           width: 100%;
           min-height: 120px;
-          padding: var(--space-4);
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: var(--border-radius);
-          color: white;
-          font-size: var(--text-base);
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(209, 213, 219, 0.8);
+          border-radius: 12px;
+          color: #1f2937;
+          font-size: 0.9rem;
           line-height: 1.5;
           resize: vertical;
-          transition: all var(--transition-fast);
+          transition: all 0.2s ease;
+          font-family: inherit;
         }
 
-        .form-textarea:focus {
+        .organic-textarea:focus {
           outline: none;
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #22c55e;
+          box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+          background: white;
         }
 
-        .form-textarea::placeholder {
-          color: var(--color-text-muted);
+        .organic-textarea::placeholder {
+          color: #9ca3af;
+        }
+
+        .organic-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 1rem 1.5rem;
+          border: none;
+          border-radius: 12px;
+          font-size: 0.95rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+        }
+
+        .organic-button.primary {
+          background: linear-gradient(135deg, #22c55e, #16a34a);
+          color: white;
+          box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .organic-button.primary:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .organic-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none !important;
+        }
+
+        .organic-spinner {
+          width: 18px;
+          height: 18px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top: 2px solid white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
         }
 
         .coming-soon {
           text-align: center;
-          padding: var(--space-8) var(--space-4);
+          padding: 3rem 2rem;
         }
 
         .coming-soon-icon {
-          font-size: 4rem;
-          margin-bottom: var(--space-4);
+          font-size: 3rem;
+          margin-bottom: 1rem;
         }
 
         .coming-soon h3 {
-          font-size: var(--text-lg);
+          font-size: 1.2rem;
           font-weight: 600;
-          color: white;
-          margin-bottom: var(--space-3);
+          color: #1f2937;
+          margin-bottom: 0.75rem;
+        }
+
+        .coming-soon p {
+          color: #6b7280;
+          font-size: 0.9rem;
+          line-height: 1.6;
+        }
+
+        .floating-particle {
+          position: fixed;
+          animation: float-across var(--duration, 20s) linear infinite;
+          animation-delay: var(--delay, 0s);
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0.6;
+        }
+
+        @keyframes float-across {
+          0% {
+            transform: translateX(-2rem) translateY(var(--start-y, 50vh)) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.6;
+          }
+          90% {
+            opacity: 0.6;
+          }
+          100% {
+            transform: translateX(calc(100vw + 2rem)) translateY(var(--end-y, 50vh)) rotate(360deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
-          .logout-btn {
-            position: static;
-            margin-top: var(--space-4);
-            align-self: flex-start;
+          .organic-content {
+            padding: 1rem;
           }
 
-          .tab-button {
-            font-size: var(--text-xs);
-            padding: var(--space-2) var(--space-3);
+          .organic-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
           }
 
-          .tab-button span {
+          .organic-logout-btn {
+            align-self: flex-end;
+          }
+
+          .organic-tab span {
             display: none;
+          }
+
+          .organic-tab {
+            padding: 0.75rem;
+          }
+
+          .welcome-text h1 {
+            font-size: 1.5rem;
           }
 
           .section-header {
             flex-direction: column;
             align-items: flex-start;
-            gap: var(--space-2);
+            gap: 0.5rem;
           }
         }
       `}</style>

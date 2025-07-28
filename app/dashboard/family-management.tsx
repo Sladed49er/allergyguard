@@ -134,26 +134,69 @@ export const FamilyManagement = () => {
     const [name, setName] = useState(editingMember?.name || '');
     const [age, setAge] = useState(editingMember?.age?.toString() || '');
     const [role, setRole] = useState<'parent' | 'child' | 'other'>(editingMember?.role || 'child');
-    const [selectedAllergies, setSelectedAllergies] = useState<string[]>(
-      editingMember?.allergies.map(a => a.allergen) || []
+    const [allergyData, setAllergyData] = useState<{[key: string]: {selected: boolean, severity: string}}>(
+      () => {
+        const initial: {[key: string]: {selected: boolean, severity: string}} = {};
+        commonAllergens.forEach(allergen => {
+          const existingAllergy = editingMember?.allergies.find(a => a.allergen === allergen);
+          initial[allergen] = {
+            selected: !!existingAllergy,
+            severity: existingAllergy?.severity || 'moderate'
+          };
+        });
+        return initial;
+      }
     );
     const [customAllergen, setCustomAllergen] = useState('');
+    const [customAllergies, setCustomAllergies] = useState<{[key: string]: {selected: boolean, severity: string}}>(
+      () => {
+        const custom: {[key: string]: {selected: boolean, severity: string}} = {};
+        editingMember?.allergies.forEach(allergy => {
+          if (!commonAllergens.includes(allergy.allergen)) {
+            custom[allergy.allergen] = {
+              selected: true,
+              severity: allergy.severity
+            };
+          }
+        });
+        return custom;
+      }
+    );
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsLoading(true);
       
       try {
+        // Collect all selected allergies with their severity levels
+        const selectedAllergies: any[] = [];
+        
+        // Add common allergies
+        Object.entries(allergyData).forEach(([allergen, data]) => {
+          if (data.selected) {
+            selectedAllergies.push({
+              allergen,
+              severity: data.severity
+            });
+          }
+        });
+        
+        // Add custom allergies
+        Object.entries(customAllergies).forEach(([allergen, data]) => {
+          if (data.selected) {
+            selectedAllergies.push({
+              allergen,
+              severity: data.severity
+            });
+          }
+        });
+
         const memberData = {
           ...(editingMember && { id: editingMember.id }),
           name,
           age: age ? parseInt(age) : undefined,
           role,
-          allergies: selectedAllergies.map(allergen => ({
-            id: Date.now().toString() + Math.random(),
-            allergen,
-            severity: 'moderate' as const
-          }))
+          allergies: selectedAllergies
         };
 
         if (editingMember) {
@@ -182,8 +225,9 @@ export const FamilyManagement = () => {
         setName('');
         setAge('');
         setRole('child');
-        setSelectedAllergies([]);
+        setAllergyData({});
         setCustomAllergen('');
+        setCustomAllergies({});
         
       } catch (error) {
         console.error('Error saving family member:', error);
@@ -193,19 +237,65 @@ export const FamilyManagement = () => {
       }
     };
 
-    const toggleAllergy = (allergen: string) => {
-      setSelectedAllergies(prev => 
-        prev.includes(allergen) 
-          ? prev.filter(a => a !== allergen)
-          : [...prev, allergen]
-      );
+    const toggleAllergy = (allergen: string, isCustom: boolean = false) => {
+      if (isCustom) {
+        setCustomAllergies(prev => ({
+          ...prev,
+          [allergen]: {
+            selected: !prev[allergen]?.selected,
+            severity: prev[allergen]?.severity || 'moderate'
+          }
+        }));
+      } else {
+        setAllergyData(prev => ({
+          ...prev,
+          [allergen]: {
+            selected: !prev[allergen]?.selected,
+            severity: prev[allergen]?.severity || 'moderate'
+          }
+        }));
+      }
+    };
+
+    const updateSeverity = (allergen: string, severity: string, isCustom: boolean = false) => {
+      if (isCustom) {
+        setCustomAllergies(prev => ({
+          ...prev,
+          [allergen]: {
+            ...prev[allergen],
+            severity
+          }
+        }));
+      } else {
+        setAllergyData(prev => ({
+          ...prev,
+          [allergen]: {
+            ...prev[allergen],
+            severity
+          }
+        }));
+      }
     };
 
     const addCustomAllergy = () => {
-      if (customAllergen.trim() && !selectedAllergies.includes(customAllergen.trim())) {
-        setSelectedAllergies([...selectedAllergies, customAllergen.trim()]);
+      if (customAllergen.trim() && !customAllergies[customAllergen.trim()]) {
+        setCustomAllergies(prev => ({
+          ...prev,
+          [customAllergen.trim()]: {
+            selected: true,
+            severity: 'moderate'
+          }
+        }));
         setCustomAllergen('');
       }
+    };
+
+    const removeCustomAllergy = (allergen: string) => {
+      setCustomAllergies(prev => {
+        const newCustom = { ...prev };
+        delete newCustom[allergen];
+        return newCustom;
+      });
     };
 
     return (
@@ -288,36 +378,105 @@ export const FamilyManagement = () => {
             <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
               Known Allergies
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
+            
+            {/* Common Allergies */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
               {commonAllergens.map(allergen => (
-                <button
-                  key={allergen}
-                  type="button"
-                  onClick={() => toggleAllergy(allergen)}
-                  style={{
-                    padding: '0.5rem 0.75rem',
-                    backgroundColor: selectedAllergies.includes(allergen) 
-                      ? '#22c55e' 
-                      : '#f3f4f6',
-                    color: selectedAllergies.includes(allergen) 
-                      ? '#ffffff' 
-                      : '#374151',
-                    border: selectedAllergies.includes(allergen)
-                      ? '2px solid #22c55e'
-                      : '2px solid #d1d5db',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    fontWeight: '500',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {allergen}
-                </button>
+                <div key={allergen} style={{ 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '8px', 
+                  padding: '0.75rem',
+                  backgroundColor: allergyData[allergen]?.selected ? '#f0fdf4' : '#f9fafb'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={allergyData[allergen]?.selected || false}
+                      onChange={() => toggleAllergy(allergen)}
+                      style={{ marginRight: '0.25rem' }}
+                    />
+                    <span style={{ fontWeight: '500', fontSize: '0.85rem' }}>{allergen}</span>
+                  </div>
+                  
+                  {allergyData[allergen]?.selected && (
+                    <select
+                      value={allergyData[allergen]?.severity || 'moderate'}
+                      onChange={(e) => updateSeverity(allergen, e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.25rem',
+                        fontSize: '0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '4px',
+                        backgroundColor: 'white'
+                      }}
+                    >
+                      <option value="mild">Mild</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="severe">Severe</option>
+                      <option value="life-threatening">Life Threatening</option>
+                    </select>
+                  )}
+                </div>
               ))}
             </div>
+
+            {/* Custom Allergies */}
+            {Object.keys(customAllergies).length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Custom Allergies:
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                  {Object.entries(customAllergies).map(([allergen, data]) => (
+                    <div key={allergen} style={{ 
+                      border: '1px solid #e5e7eb', 
+                      borderRadius: '8px', 
+                      padding: '0.75rem',
+                      backgroundColor: '#fef3c7'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: '500', fontSize: '0.85rem', flex: 1 }}>{allergen}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomAllergy(allergen)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#dc2626',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            padding: '0.125rem'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      <select
+                        value={data.severity}
+                        onChange={(e) => updateSeverity(allergen, e.target.value, true)}
+                        style={{
+                          width: '100%',
+                          padding: '0.25rem',
+                          fontSize: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '4px',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="mild">Mild</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="severe">Severe</option>
+                        <option value="life-threatening">Life Threatening</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
+            {/* Add Custom Allergy */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"

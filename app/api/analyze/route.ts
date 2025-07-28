@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         ingredients: ingredients.trim(),
         analysis: analysis.analysis,
-        detectedAllergens: analysis.detectedAllergens,
+        detectedAllergies: analysis.detectedAllergens, // Note: schema uses detectedAllergies
         riskLevel: analysis.riskLevel,
         isProblematic: analysis.isProblematic,
         recommendations: analysis.recommendations,

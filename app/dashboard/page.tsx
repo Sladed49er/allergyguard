@@ -644,22 +644,22 @@ export default function Dashboard() {
                       }}>
                         ⚠️ Affected Family Members:
                       </h4>
-                      {analysisResult.affectedMembers.map((member, index) => (
-                        <div key={index} style={{
-                          background: 'rgba(255, 255, 255, 0.7)',
-                          padding: '0.75rem',
-                          borderRadius: '8px',
-                          marginBottom: '0.5rem',
-                          borderLeft: `4px solid ${member.maxSeverity === 'LIFE_THREATENING' ? '#ef4444' : member.maxSeverity === 'SEVERE' ? '#f97316' : '#f59e0b'}`
-                        }}>
-                          <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '0.25rem' }}>
-                            {member.name}
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                            Allergies: {member.allergies.join(', ')}
-                          </div>
+                      {analysisResult.affectedMembers.map((m, index) => (
+                      <div key={index} style={{
+                        background: 'rgba(255, 255, 255, 0.7)',
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        marginBottom: '0.5rem',
+                        borderLeft: `4px solid ${m.maxSeverity === 'LIFE_THREATENING' ? '#ef4444' : m.maxSeverity === 'SEVERE' ? '#f97316' : '#f59e0b'}`
+                      }}>
+                        <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '0.25rem' }}>
+                          {m.name}
                         </div>
-                      ))}
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          Allergies: {(m.allergies || []).join(', ')}
+                        </div>
+                      </div>
+                    ))}
                     </div>
                   )}
 
@@ -739,10 +739,7 @@ export default function Dashboard() {
                     padding: '0.75rem',
                     marginTop: '1rem'
                   }}>
-                    <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
-                      Checked against {analysisResult.familyAllergiesChecked || 0} family allergies
-                      {analysisResult.excludedMembers && analysisResult.excludedMembers > 0 && ` (${analysisResult.excludedMembers} members excluded)`}
-                    </div>
+                    
                   </div>
                 </div>
               )}

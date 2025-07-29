@@ -6,6 +6,8 @@ import { useEffect, useState, useRef } from 'react';
 import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info, Camera, Upload, Type, X, RotateCcw } from 'lucide-react';
 import { extractTextFromImage as performOCR } from '@/lib/ocr';
 import { FamilyManagement } from './family-management';
+import { MealPlanner } from './meal-planner'
+import { Calendar } from 'lucide-react';
 
 // Types for AI analysis results
 interface AllergenAnalysis {
@@ -297,6 +299,7 @@ export default function Dashboard() {
   const tabs = [
     { id: 'scanner', label: 'AI Scanner', icon: Search },
     { id: 'family', label: 'Family', icon: Users },
+    { id: 'mealplan', label: 'Meal Plan', icon: Calendar },
     { id: 'history', label: 'History', icon: History }
   ];
 
@@ -749,6 +752,8 @@ export default function Dashboard() {
                   )
 
           {activeTab === 'family' && <FamilyManagement />}
+
+          {activeTab === 'mealplan' && <MealPlanner />}
               
 
           {activeTab === 'history' && (

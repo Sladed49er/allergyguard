@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { ShieldCheck, Search, Users, History, LogOut, Wheat, Milk, Fish, Nut, Sparkles, Leaf, AlertTriangle, CheckCircle, XCircle, Info, Camera, Upload, Type, X, RotateCcw } from 'lucide-react';
 import { extractTextFromImage as performOCR } from '@/lib/ocr';
-import { FamilyManagement } from './family-management';
 
 // Types for AI analysis results
 interface AllergenAnalysis {
@@ -14,13 +13,22 @@ interface AllergenAnalysis {
   analysis: string;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   recommendations: string[];
-  ingredientHighlights: {
+  ingredientHighlights?: {
     safe: string[];
     concerning: string[];
     problematic: string[];
   };
   scanDate?: string;
-  familyAllergiesChecked?: string[];
+  familyAllergiesChecked?: number;
+  excludedMembers?: number;
+  // New family-specific properties
+  familySpecificWarnings?: string[];
+  affectedMembers?: Array<{
+    name: string;
+    allergies: string[];
+    maxSeverity: string;
+  }>;
+  safeMealFor?: string[];
 }
 
 interface AnalysisResponse {
@@ -580,9 +588,106 @@ export default function Dashboard() {
               {analysisResult && (
                 <div id="analysis-results" className="analysis-results">
                   <div className="results-header">
-                    <h3>Analysis Results</h3>
+                    <h3>Family Safety Analysis</h3>
                     <RiskBadge level={analysisResult.riskLevel} />
                   </div>
+
+                  {/* Family-Specific Warnings */}
+                  {analysisResult.familySpecificWarnings && analysisResult.familySpecificWarnings.length > 0 && (
+                    <div style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      marginBottom: '1.5rem'
+                    }}>
+                      <h4 style={{ 
+                        color: '#dc2626', 
+                        fontSize: '0.9rem', 
+                        fontWeight: '600', 
+                        margin: '0 0 0.5rem 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <AlertTriangle size={16} />
+                        Family Alert
+                      </h4>
+                      {analysisResult.familySpecificWarnings.map((warning, index) => (
+                        <div key={index} style={{ 
+                          color: '#dc2626', 
+                          fontSize: '0.85rem', 
+                          marginBottom: '0.25rem',
+                          lineHeight: '1.4'
+                        }}>
+                          {warning}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Affected Family Members */}
+                  {analysisResult.affectedMembers && analysisResult.affectedMembers.length > 0 && (
+                    <div style={{
+                      background: 'rgba(251, 191, 36, 0.1)',
+                      border: '1px solid rgba(251, 191, 36, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      marginBottom: '1.5rem'
+                    }}>
+                      <h4 style={{ 
+                        color: '#d97706', 
+                        fontSize: '0.9rem', 
+                        fontWeight: '600', 
+                        margin: '0 0 0.75rem 0' 
+                      }}>
+                        ⚠️ Affected Family Members:
+                      </h4>
+                      {analysisResult.affectedMembers.map((member, index) => (
+                        <div key={index} style={{
+                          background: 'rgba(255, 255, 255, 0.7)',
+                          padding: '0.75rem',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem',
+                          borderLeft: `4px solid ${member.maxSeverity === 'LIFE_THREATENING' ? '#ef4444' : member.maxSeverity === 'SEVERE' ? '#f97316' : '#f59e0b'}`
+                        }}>
+                          <div style={{ fontWeight: '500', color: '#1f2937', marginBottom: '0.25rem' }}>
+                            {member.name}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                            Allergies: {member.allergies.join(', ')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Safe for Family Members */}
+                  {analysisResult.safeMealFor && analysisResult.safeMealFor.length > 0 && (
+                    <div style={{
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      marginBottom: '1.5rem'
+                    }}>
+                      <h4 style={{ 
+                        color: '#059669', 
+                        fontSize: '0.9rem', 
+                        fontWeight: '600', 
+                        margin: '0 0 0.5rem 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <CheckCircle size={16} />
+                        Safe for:
+                      </h4>
+                      <div style={{ color: '#059669', fontSize: '0.85rem' }}>
+                        {analysisResult.safeMealFor.join(', ')}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Main Analysis */}
                   <div className="analysis-section">
@@ -625,39 +730,42 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  {/* Ingredient Highlights */}
-                  {analysisResult.ingredientHighlights && (
-                    <div className="ingredient-highlights">
-                      <h4>Ingredient Analysis:</h4>
-                      
-                      {analysisResult.ingredientHighlights.problematic.length > 0 && (
-                        <div className="highlight-section problematic">
-                          <strong>⚠️ Problematic:</strong>
-                          <span>{analysisResult.ingredientHighlights.problematic.join(', ')}</span>
-                        </div>
-                      )}
-                      
-                      {analysisResult.ingredientHighlights.concerning.length > 0 && (
-                        <div className="highlight-section concerning">
-                          <strong>⚡ Concerning:</strong>
-                          <span>{analysisResult.ingredientHighlights.concerning.join(', ')}</span>
-                        </div>
-                      )}
-                      
-                      {analysisResult.ingredientHighlights.safe.length > 0 && (
-                        <div className="highlight-section safe">
-                          <strong>✅ Safe:</strong>
-                          <span>{analysisResult.ingredientHighlights.safe.join(', ')}</span>
-                        </div>
-                      )}
+                  {/* Family Summary */}
+                  <div style={{
+                    background: 'rgba(107, 114, 128, 0.05)',
+                    border: '1px solid rgba(107, 114, 128, 0.2)',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    marginTop: '1rem'
+                  }}>
+                    <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                      Checked against {analysisResult.familyAllergiesChecked || 0} family allergies
+                      {analysisResult.excludedMembers && analysisResult.excludedMembers > 0 && ` (${analysisResult.excludedMembers} members excluded)`}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {activeTab === 'family' && <FamilyManagement />}
+          {activeTab === 'family' && (
+            <div>
+              <div className="section-header">
+                <Users size={22} />
+                <h2>Family Management</h2>
+              </div>
+              
+              <p className="section-description">
+                Manage your family members and their allergies 👨‍👩‍👧‍👦
+              </p>
+              
+              <div className="coming-soon">
+                <div className="coming-soon-icon">🌱</div>
+                <h3>Family Profiles</h3>
+                <p>Add family members, manage their allergies, and set severity levels. Growing soon!</p>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'history' && (
             <div>

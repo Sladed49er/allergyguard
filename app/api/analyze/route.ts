@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { ingredients } = body;
+    const { ingredients, excludedMembers = [] } = body; // Allow excluding specific family members
 
     if (!ingredients || typeof ingredients !== 'string') {
       return NextResponse.json(
@@ -27,9 +27,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user from database
+    // Get user and their family data
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: session.user.email },
+      include: {
+        families: {
+          include: {
+            members: {
+              include: {
+                allergies: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
@@ -39,37 +50,132 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, use common allergens since family management isn't implemented yet
-    // TODO: Replace with actual family allergies when family management is built
-    const familyAllergies: string[] = [
-      'milk', 'eggs', 'fish', 'shellfish', 'tree nuts', 
-      'peanuts', 'wheat', 'soybeans', 'sesame'
-    ];
+    // Collect family allergies (excluding any specified members)
+    const familyAllergies: Array<{
+      allergen: string;
+      severity: string;
+      memberName: string;
+      memberId: string;
+    }> = [];
 
-    // Analyze ingredients with AI
-    const analysis = await analyzeIngredients(ingredients, familyAllergies);
+    user.families.forEach(family => {
+      family.members.forEach(member => {
+        // Skip excluded members (useful for meal planning)
+        if (excludedMembers.includes(member.id)) {
+          return;
+        }
+
+        member.allergies.forEach(allergy => {
+          familyAllergies.push({
+            allergen: allergy.name,
+            severity: allergy.severity,
+            memberName: member.name,
+            memberId: member.id
+          });
+        });
+      });
+    });
+
+    // Create allergy summary for AI prompt
+    const allergyList = familyAllergies.length > 0 
+      ? familyAllergies.map(a => `${a.allergen} (${a.severity.toLowerCase()} - ${a.memberName})`).join(', ')
+      : 'No specific family allergies recorded - check for common allergens';
+
+    // Analyze ingredients with AI using family-specific allergies
+    const analysis = await analyzeIngredients(ingredients, familyAllergies.map(a => a.allergen));
+
+    // Enhanced analysis with family-specific information
+    const enhancedAnalysis = {
+      ...analysis,
+      familySpecificWarnings: [],
+      affectedMembers: [],
+      safeMealFor: []
+    };
+
+    // Check which family members are affected
+    const affectedMembers: Array<{name: string, allergies: string[], maxSeverity: string}> = [];
+    const safeMealFor: string[] = [];
+
+    user.families.forEach(family => {
+      family.members.forEach(member => {
+        // Skip excluded members
+        if (excludedMembers.includes(member.id)) {
+          return;
+        }
+
+        const memberAllergies = member.allergies.filter(allergy => 
+          analysis.detectedAllergens.some(detected => 
+            detected.toLowerCase().includes(allergy.name.toLowerCase()) ||
+            allergy.name.toLowerCase().includes(detected.toLowerCase())
+          )
+        );
+
+        if (memberAllergies.length > 0) {
+          const maxSeverity = memberAllergies.reduce((max, allergy) => {
+            const severityOrder = ['MILD', 'MODERATE', 'SEVERE', 'LIFE_THREATENING'];
+            return severityOrder.indexOf(allergy.severity) > severityOrder.indexOf(max) 
+              ? allergy.severity 
+              : max;
+          }, 'MILD');
+
+          affectedMembers.push({
+            name: member.name,
+            allergies: memberAllergies.map(a => `${a.name} (${a.severity.toLowerCase()})`),
+            maxSeverity
+          });
+        } else {
+          safeMealFor.push(member.name);
+        }
+      });
+    });
+
+    enhancedAnalysis.affectedMembers = affectedMembers;
+    enhancedAnalysis.safeMealFor = safeMealFor;
+
+    // Generate family-specific warnings
+    if (affectedMembers.length > 0) {
+      enhancedAnalysis.familySpecificWarnings = [
+        `⚠️ This product affects ${affectedMembers.length} family member(s)`,
+        ...affectedMembers.map(member => 
+          `🚨 ${member.name}: Allergic to ${member.allergies.join(', ')}`
+        )
+      ];
+
+      // Update risk level based on family severity
+      const hasLifeThreatening = affectedMembers.some(m => m.maxSeverity === 'LIFE_THREATENING');
+      const hasSevere = affectedMembers.some(m => m.maxSeverity === 'SEVERE');
+      
+      if (hasLifeThreatening) {
+        enhancedAnalysis.riskLevel = 'CRITICAL';
+        enhancedAnalysis.isProblematic = true;
+      } else if (hasSevere) {
+        enhancedAnalysis.riskLevel = affectedMembers.length > 1 ? 'CRITICAL' : 'HIGH';
+        enhancedAnalysis.isProblematic = true;
+      }
+    }
 
     // Save scan to history
     const scanHistory = await prisma.scanHistory.create({
       data: {
         userId: user.id,
         ingredients: ingredients.trim(),
-        analysis: analysis.analysis,
+        analysis: enhancedAnalysis.analysis,
         detectedAllergies: analysis.detectedAllergens,
-        riskLevel: analysis.riskLevel,
-        isProblematic: analysis.isProblematic,
-        recommendations: analysis.recommendations
+        riskLevel: enhancedAnalysis.riskLevel,
+        isProblematic: enhancedAnalysis.isProblematic,
+        recommendations: enhancedAnalysis.recommendations
       }
     });
 
-    // Return analysis results
+    // Return enhanced analysis results
     return NextResponse.json({
       success: true,
       scanId: scanHistory.id,
       analysis: {
-        ...analysis,
+        ...enhancedAnalysis,
         scanDate: scanHistory.createdAt,
-        familyAllergiesChecked: familyAllergies
+        familyAllergiesChecked: familyAllergies.length,
+        excludedMembers: excludedMembers.length
       }
     });
 

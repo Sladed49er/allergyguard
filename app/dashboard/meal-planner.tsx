@@ -183,64 +183,87 @@ const MealPlanner = () => {
       specialRequests: ''
     });
 
-    const handleGeneratePlan = async () => {
-      setIsGenerating(true);
-      try {
-        // Generate mock suggestions for now - replace with actual API call
-        const mockSuggestions: MealSuggestion[] = [
-          {
-            id: '1',
-            name: 'Grilled Chicken with Vegetables',
-            type: 'dinner',
-            ingredients: ['chicken breast', 'broccoli', 'carrots', 'olive oil', 'garlic', 'herbs'],
-            prepTime: 15,
-            cookTime: 25,
-            difficulty: 'easy',
-            cuisine: 'American',
-            description: 'Healthy grilled chicken with seasonal vegetables',
-            tags: ['gluten-free', 'high-protein'],
-            safeFor: planRequest.attendees,
-            allergenWarnings: []
-          },
-          {
-            id: '2',
-            name: 'Vegetable Stir Fry',
-            type: 'dinner',
-            ingredients: ['mixed vegetables', 'soy sauce', 'ginger', 'garlic', 'rice', 'sesame oil'],
-            prepTime: 10,
-            cookTime: 15,
-            difficulty: 'easy',
-            cuisine: 'Asian',
-            description: 'Quick and healthy vegetable stir fry',
-            tags: ['vegetarian', 'quick'],
-            safeFor: planRequest.attendees,
-            allergenWarnings: ['soy']
-          },
-          {
-            id: '3',
-            name: 'Baked Salmon with Quinoa',
-            type: 'dinner',
-            ingredients: ['salmon fillet', 'quinoa', 'lemon', 'asparagus', 'olive oil'],
-            prepTime: 10,
-            cookTime: 20,
-            difficulty: 'medium',
-            cuisine: 'Mediterranean',
-            description: 'Nutritious baked salmon with quinoa and vegetables',
-            tags: ['gluten-free', 'omega-3'],
-            safeFor: planRequest.attendees,
-            allergenWarnings: ['fish']
-          }
-        ];
+                const handleGeneratePlan = async () => {
+            setIsGenerating(true);
+            try {
+                // Simulate AI processing time
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Generate mock suggestions based on selected preferences
+                const mockSuggestions: MealSuggestion[] = [
+                {
+                    id: '1',
+                    name: 'Grilled Chicken with Roasted Vegetables',
+                    type: planRequest.mealTypes[0] || 'dinner',
+                    ingredients: ['chicken breast', 'broccoli', 'carrots', 'olive oil', 'garlic', 'herbs', 'lemon'],
+                    prepTime: planRequest.cookingTime === 'quick' ? 10 : 15,
+                    cookTime: planRequest.cookingTime === 'quick' ? 15 : 25,
+                    difficulty: 'easy',
+                    cuisine: planRequest.cuisinePreferences[0] || 'American',
+                    description: 'Healthy grilled chicken with seasonal roasted vegetables - perfect for the whole family',
+                    tags: ['gluten-free', 'high-protein', 'family-friendly'],
+                    safeFor: planRequest.attendees,
+                    allergenWarnings: []
+                },
+                {
+                    id: '2',
+                    name: 'Vegetable Pasta with Marinara',
+                    type: planRequest.mealTypes[0] || 'dinner',
+                    ingredients: ['whole wheat pasta', 'tomato sauce', 'zucchini', 'bell peppers', 'onions', 'garlic', 'basil'],
+                    prepTime: planRequest.cookingTime === 'quick' ? 5 : 10,
+                    cookTime: planRequest.cookingTime === 'quick' ? 10 : 15,
+                    difficulty: 'easy',
+                    cuisine: 'Italian',
+                    description: 'Quick and nutritious vegetable pasta that kids and adults love',
+                    tags: ['vegetarian', 'quick', 'kid-friendly'],
+                    safeFor: planRequest.attendees,
+                    allergenWarnings: ['wheat']
+                },
+                {
+                    id: '3',
+                    name: 'Baked Salmon with Quinoa Pilaf',
+                    type: planRequest.mealTypes[0] || 'dinner',
+                    ingredients: ['salmon fillet', 'quinoa', 'vegetable broth', 'asparagus', 'lemon', 'dill'],
+                    prepTime: 10,
+                    cookTime: planRequest.cookingTime === 'quick' ? 15 : 20,
+                    difficulty: 'medium',
+                    cuisine: 'Mediterranean',
+                    description: 'Omega-3 rich salmon with fluffy quinoa pilaf and fresh vegetables',
+                    tags: ['gluten-free', 'omega-3', 'heart-healthy'],
+                    safeFor: planRequest.attendees,
+                    allergenWarnings: ['fish']
+                },
+                {
+                    id: '4',
+                    name: 'Turkey and Veggie Stir-Fry',
+                    type: planRequest.mealTypes[0] || 'dinner',
+                    ingredients: ['ground turkey', 'mixed vegetables', 'ginger', 'garlic', 'rice', 'coconut oil'],
+                    prepTime: planRequest.cookingTime === 'quick' ? 5 : 10,
+                    cookTime: planRequest.cookingTime === 'quick' ? 10 : 15,
+                    difficulty: 'easy',
+                    cuisine: 'Asian',
+                    description: 'Quick and healthy stir-fry with lean turkey and colorful vegetables',
+                    tags: ['gluten-free', 'dairy-free', 'quick'],
+                    safeFor: planRequest.attendees,
+                    allergenWarnings: []
+                }
+                ];
 
-        setSuggestions(mockSuggestions);
-        setStep(4);
-      } catch (error) {
-        console.error('Error generating meal plan:', error);
-        alert('Error generating meal suggestions');
-      } finally {
-        setIsGenerating(false);
-      }
-    };
+                // Filter suggestions based on cooking time if specified
+                let filteredSuggestions = mockSuggestions;
+                if (planRequest.cookingTime === 'quick') {
+                filteredSuggestions = mockSuggestions.filter(s => (s.prepTime + s.cookTime) <= 25);
+                }
+
+                setSuggestions(filteredSuggestions);
+                setStep(4); // Move to results step
+            } catch (error) {
+                console.error('Error generating meal plan:', error);
+                alert('Error generating meal suggestions');
+            } finally {
+                setIsGenerating(false);
+            }
+            };
 
     const addSuggestionToMealPlan = (suggestion: MealSuggestion) => {
       const meal: Meal = {

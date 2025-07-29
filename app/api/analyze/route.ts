@@ -87,13 +87,17 @@ export async function POST(request: NextRequest) {
     // Enhanced analysis with family-specific information
     const enhancedAnalysis = {
       ...analysis,
-      familySpecificWarnings: [],
-      affectedMembers: [],
-      safeMealFor: []
+      familySpecificWarnings: [] as string[],
+      affectedMembers: [] as Array<{
+        name: string;
+        allergen: string;
+        severity: string;
+      }>,
+      safeMealFor: [] as string[]
     };
 
     // Check which family members are affected
-    const affectedMembers: Array<{name: string, allergies: string[], maxSeverity: string}> = [];
+    const affectedMembersTemp: Array<{name: string, allergies: string[], maxSeverity: string}> = [];
     const safeMealFor: string[] = [];
 
     user.families.forEach(family => {
@@ -118,7 +122,7 @@ export async function POST(request: NextRequest) {
               : max;
           }, 'MILD');
 
-          affectedMembers.push({
+          affectedMembersTemp.push({
             name: member.name,
             allergies: memberAllergies.map(a => `${a.name} (${a.severity.toLowerCase()})`),
             maxSeverity
@@ -129,27 +133,48 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    enhancedAnalysis.affectedMembers = affectedMembers;
+    // Convert affected members to the correct format for the interface
+    const formattedAffectedMembers: Array<{
+      name: string;
+      allergen: string;
+      severity: string;
+    }> = [];
+
+    affectedMembersTemp.forEach(member => {
+      member.allergies.forEach(allergyString => {
+        // Extract allergen name and severity from the formatted string
+        const allergenMatch = allergyString.match(/^(.+) \((.+)\)$/);
+        if (allergenMatch) {
+          formattedAffectedMembers.push({
+            name: member.name,
+            allergen: allergenMatch[1],
+            severity: allergenMatch[2]
+          });
+        }
+      });
+    });
+
+    enhancedAnalysis.affectedMembers = formattedAffectedMembers;
     enhancedAnalysis.safeMealFor = safeMealFor;
 
     // Generate family-specific warnings
-    if (affectedMembers.length > 0) {
+    if (affectedMembersTemp.length > 0) {
       enhancedAnalysis.familySpecificWarnings = [
-        `⚠️ This product affects ${affectedMembers.length} family member(s)`,
-        ...affectedMembers.map(member => 
+        `⚠️ This product affects ${affectedMembersTemp.length} family member(s)`,
+        ...affectedMembersTemp.map(member => 
           `🚨 ${member.name}: Allergic to ${member.allergies.join(', ')}`
         )
       ];
 
       // Update risk level based on family severity
-      const hasLifeThreatening = affectedMembers.some(m => m.maxSeverity === 'LIFE_THREATENING');
-      const hasSevere = affectedMembers.some(m => m.maxSeverity === 'SEVERE');
+      const hasLifeThreatening = affectedMembersTemp.some(m => m.maxSeverity === 'LIFE_THREATENING');
+      const hasSevere = affectedMembersTemp.some(m => m.maxSeverity === 'SEVERE');
       
       if (hasLifeThreatening) {
         enhancedAnalysis.riskLevel = 'CRITICAL';
         enhancedAnalysis.isProblematic = true;
       } else if (hasSevere) {
-        enhancedAnalysis.riskLevel = affectedMembers.length > 1 ? 'CRITICAL' : 'HIGH';
+        enhancedAnalysis.riskLevel = affectedMembersTemp.length > 1 ? 'CRITICAL' : 'HIGH';
         enhancedAnalysis.isProblematic = true;
       }
     }

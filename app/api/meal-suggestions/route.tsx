@@ -1,12 +1,9 @@
-// app/api/meal-suggestions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]/route';
-import { analyzeIngredients } from '@/lib/openai';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,7 +23,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    // Enhanced prompt with better instructions for consistent JSON output
     const enhancedPrompt = `
 ${prompt}
 
@@ -52,7 +48,6 @@ Example format:
 Generate exactly ${Math.min(mealTypes.length * 2, 6)} meal suggestions following this format.
 `;
 
-    // Use your existing OpenAI function
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -95,7 +90,6 @@ Generate exactly ${Math.min(mealTypes.length * 2, 6)} meal suggestions following
       );
     }
 
-    // Clean up the response - remove any markdown formatting
     aiContent = aiContent.trim();
     if (aiContent.startsWith('```json')) {
       aiContent = aiContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
@@ -103,17 +97,14 @@ Generate exactly ${Math.min(mealTypes.length * 2, 6)} meal suggestions following
       aiContent = aiContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    // Parse and validate the JSON
     let suggestions;
     try {
       suggestions = JSON.parse(aiContent);
       
-      // Ensure it's an array
       if (!Array.isArray(suggestions)) {
         suggestions = [suggestions];
       }
 
-      // Validate each suggestion has required fields
       suggestions = suggestions.map((suggestion: any, index: number) => ({
         name: suggestion.name || `AI Meal ${index + 1}`,
         type: mealTypes.includes(suggestion.type) ? suggestion.type : mealTypes[0],
@@ -136,13 +127,12 @@ Generate exactly ${Math.min(mealTypes.length * 2, 6)} meal suggestions following
         { 
           error: 'Failed to parse AI response as JSON',
           details: parseError instanceof Error ? parseError.message : 'Unknown parsing error',
-          rawContent: aiContent.substring(0, 500) // First 500 chars for debugging
+          rawContent: aiContent.substring(0, 500)
         },
         { status: 500 }
       );
     }
 
-    // Log successful generation for debugging
     console.log(`Generated ${suggestions.length} meal suggestions for user ${session.user.email}`);
 
     return NextResponse.json({
@@ -168,4 +158,3 @@ Generate exactly ${Math.min(mealTypes.length * 2, 6)} meal suggestions following
     );
   }
 }
-export default MealPlanner;

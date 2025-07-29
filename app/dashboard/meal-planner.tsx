@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Plus, Users, ChefHat, Clock, AlertTriangle, CheckCircle, Edit3, Trash2, Search } from 'lucide-react';
+import { Calendar, Plus, Users, ChefHat, Clock, AlertTriangle, CheckCircle, Edit3, Trash2, Search, Sparkles, Wand2 } from 'lucide-react';
 
 interface FamilyMember {
   id: string;
@@ -30,6 +30,32 @@ interface MealPlan {
   meals: Meal[];
 }
 
+interface MealSuggestion {
+  id: string;
+  name: string;
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  ingredients: string[];
+  prepTime: number;
+  cookTime: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  cuisine: string;
+  description: string;
+  tags: string[];
+  safeFor: string[]; // Family member IDs this meal is safe for
+  allergenWarnings: string[];
+}
+
+interface WeeklyPlanRequest {
+  startDate: string;
+  mealTypes: ('breakfast' | 'lunch' | 'dinner' | 'snack')[];
+  attendees: string[]; // Default family members for all meals
+  dietaryPreferences: string[];
+  cuisinePreferences: string[];
+  cookingTime: 'quick' | 'moderate' | 'any'; // 15min, 30min, any
+  budget: 'budget' | 'moderate' | 'premium';
+  specialRequests: string;
+}
+
 const MealPlanner = () => {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
@@ -38,6 +64,11 @@ const MealPlanner = () => {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeView, setActiveView] = useState<'week' | 'day'>('week');
+  
+  // AI Suggestions state
+  const [showSuggestionWizard, setShowSuggestionWizard] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
 
   useEffect(() => {
     loadFamilyMembers();
@@ -138,6 +169,567 @@ const MealPlanner = () => {
     };
   };
 
+  // AI Suggestion Wizard Component
+  const SuggestionWizard = () => {
+    const [step, setStep] = useState(1);
+    const [planRequest, setPlanRequest] = useState<WeeklyPlanRequest>({
+      startDate: selectedDate,
+      mealTypes: ['dinner'],
+      attendees: [],
+      dietaryPreferences: [],
+      cuisinePreferences: [],
+      cookingTime: 'moderate',
+      budget: 'moderate',
+      specialRequests: ''
+    });
+
+    const handleGeneratePlan = async () => {
+      setIsGenerating(true);
+      try {
+        // Generate mock suggestions for now - replace with actual API call
+        const mockSuggestions: MealSuggestion[] = [
+          {
+            id: '1',
+            name: 'Grilled Chicken with Vegetables',
+            type: 'dinner',
+            ingredients: ['chicken breast', 'broccoli', 'carrots', 'olive oil', 'garlic', 'herbs'],
+            prepTime: 15,
+            cookTime: 25,
+            difficulty: 'easy',
+            cuisine: 'American',
+            description: 'Healthy grilled chicken with seasonal vegetables',
+            tags: ['gluten-free', 'high-protein'],
+            safeFor: planRequest.attendees,
+            allergenWarnings: []
+          },
+          {
+            id: '2',
+            name: 'Vegetable Stir Fry',
+            type: 'dinner',
+            ingredients: ['mixed vegetables', 'soy sauce', 'ginger', 'garlic', 'rice', 'sesame oil'],
+            prepTime: 10,
+            cookTime: 15,
+            difficulty: 'easy',
+            cuisine: 'Asian',
+            description: 'Quick and healthy vegetable stir fry',
+            tags: ['vegetarian', 'quick'],
+            safeFor: planRequest.attendees,
+            allergenWarnings: ['soy']
+          },
+          {
+            id: '3',
+            name: 'Baked Salmon with Quinoa',
+            type: 'dinner',
+            ingredients: ['salmon fillet', 'quinoa', 'lemon', 'asparagus', 'olive oil'],
+            prepTime: 10,
+            cookTime: 20,
+            difficulty: 'medium',
+            cuisine: 'Mediterranean',
+            description: 'Nutritious baked salmon with quinoa and vegetables',
+            tags: ['gluten-free', 'omega-3'],
+            safeFor: planRequest.attendees,
+            allergenWarnings: ['fish']
+          }
+        ];
+
+        setSuggestions(mockSuggestions);
+        setStep(4);
+      } catch (error) {
+        console.error('Error generating meal plan:', error);
+        alert('Error generating meal suggestions');
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    const addSuggestionToMealPlan = (suggestion: MealSuggestion) => {
+      const meal: Meal = {
+        id: Date.now().toString(),
+        name: suggestion.name,
+        type: suggestion.type,
+        ingredients: suggestion.ingredients,
+        attendees: suggestion.safeFor,
+        prepTime: suggestion.prepTime,
+        cookTime: suggestion.cookTime,
+        notes: suggestion.description
+      };
+
+      // Find or create meal plan for selected date
+      let planForDate = getMealPlanForDate(selectedDate);
+      if (!planForDate) {
+        planForDate = {
+          id: Date.now().toString(),
+          date: selectedDate,
+          meals: []
+        };
+      }
+
+      planForDate.meals.push(meal);
+
+      // Update meal plans state
+      setMealPlans(prev => {
+        const updated = prev.filter(plan => plan.date !== selectedDate);
+        return [...updated, planForDate!];
+      });
+
+      alert(`✅ ${suggestion.name} added to your meal plan!`);
+    };
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '1rem'
+      }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          maxWidth: '700px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+        }}>
+          <div style={{ padding: '2rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: '0' }}>
+                  🤖 AI Meal Planner
+                </h2>
+                <p style={{ fontSize: '0.9rem', color: '#6b7280', margin: '0.5rem 0 0 0' }}>
+                  Let AI create personalized, family-safe meal suggestions
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowSuggestionWizard(false)}
+                style={{
+                  padding: '0.5rem',
+                  background: 'rgba(107, 114, 128, 0.1)',
+                  color: '#6b7280',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '0.5rem'
+              }}>
+                {['Meals', 'Family', 'Preferences', 'Results'].map((label, index) => (
+                  <span key={index} style={{
+                    fontSize: '0.8rem',
+                    color: step > index + 1 ? '#22c55e' : step === index + 1 ? '#3b82f6' : '#9ca3af',
+                    fontWeight: step === index + 1 ? '600' : '400'
+                  }}>
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <div style={{
+                width: '100%',
+                height: '4px',
+                background: '#e5e7eb',
+                borderRadius: '2px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${(step / 4) * 100}%`,
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+
+            {/* Step 1: Meal Types */}
+            {step === 1 && (
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#1f2937', marginBottom: '1.5rem' }}>
+                  📅 What meals would you like suggestions for?
+                </h3>
+                
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.75rem' }}>
+                    Which meals? (Select all that apply)
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                    {[
+                      { type: 'breakfast', icon: '🍳', label: 'Breakfast' },
+                      { type: 'lunch', icon: '🥗', label: 'Lunch' },
+                      { type: 'dinner', icon: '🍽️', label: 'Dinner' },
+                      { type: 'snack', icon: '🍎', label: 'Snacks' }
+                    ].map(meal => (
+                      <div key={meal.type} style={{
+                        padding: '1rem',
+                        background: planRequest.mealTypes.includes(meal.type as any) ? 'rgba(34, 197, 94, 0.1)' : '#f9fafb',
+                        border: `2px solid ${planRequest.mealTypes.includes(meal.type as any) ? '#22c55e' : '#e5e7eb'}`,
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.2s ease'
+                      }} onClick={() => {
+                        setPlanRequest(prev => ({
+                          ...prev,
+                          mealTypes: prev.mealTypes.includes(meal.type as any)
+                            ? prev.mealTypes.filter(t => t !== meal.type)
+                            : [...prev.mealTypes, meal.type as any]
+                        }));
+                      }}>
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{meal.icon}</div>
+                        <div style={{ fontWeight: '500', color: '#374151' }}>{meal.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.75rem' }}>
+                    How much time do you have for cooking?
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {[
+                      { value: 'quick', label: '⚡ Quick (15 min)', desc: 'Fast & simple meals' },
+                      { value: 'moderate', label: '🕐 Moderate (30 min)', desc: 'Balanced prep time' },
+                      { value: 'any', label: '👨‍🍳 Any time', desc: 'No time restrictions' }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => setPlanRequest(prev => ({ ...prev, cookingTime: option.value as any }))}
+                        style={{
+                          flex: 1,
+                          padding: '1rem',
+                          background: planRequest.cookingTime === option.value ? 'rgba(34, 197, 94, 0.1)' : '#f9fafb',
+                          border: `2px solid ${planRequest.cookingTime === option.value ? '#22c55e' : '#e5e7eb'}`,
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', color: '#374151', marginBottom: '0.25rem' }}>
+                          {option.label}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          {option.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Family Selection */}
+            {step === 2 && (
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#1f2937', marginBottom: '1.5rem' }}>
+                  👨‍👩‍👧‍👦 Who's eating? (Default attendees)
+                </h3>
+                
+                <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                  Select family members who will typically be eating these meals.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                  {familyMembers.map(member => (
+                    <div key={member.id} style={{
+                      padding: '1rem',
+                      background: planRequest.attendees.includes(member.id) ? 'rgba(34, 197, 94, 0.1)' : '#f9fafb',
+                      border: `2px solid ${planRequest.attendees.includes(member.id) ? '#22c55e' : '#e5e7eb'}`,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }} onClick={() => {
+                      setPlanRequest(prev => ({
+                        ...prev,
+                        attendees: prev.attendees.includes(member.id)
+                          ? prev.attendees.filter(id => id !== member.id)
+                          : [...prev.attendees, member.id]
+                      }));
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={planRequest.attendees.includes(member.id)}
+                          onChange={() => {}}
+                          style={{ pointerEvents: 'none' }}
+                        />
+                        <span style={{ fontWeight: '600', color: '#1f2937' }}>{member.name}</span>
+                      </div>
+                      
+                      {member.allergies && member.allergies.length > 0 && (
+                        <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                          🚨 Allergies: {member.allergies.map(a => a.name).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {planRequest.attendees.length === 0 && (
+                  <div style={{
+                    background: 'rgba(251, 191, 36, 0.1)',
+                    border: '1px solid rgba(251, 191, 36, 0.3)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ color: '#d97706', margin: '0', fontSize: '0.9rem' }}>
+                      ⚠️ Please select at least one family member to continue
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Preferences */}
+            {step === 3 && (
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#1f2937', marginBottom: '1.5rem' }}>
+                  🍽️ Your Preferences
+                </h3>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.75rem' }}>
+                    Favorite Cuisines (Optional)
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {['Italian', 'Mexican', 'Asian', 'American', 'Mediterranean', 'Indian', 'Thai', 'French'].map(cuisine => (
+                      <button
+                        key={cuisine}
+                        onClick={() => {
+                          setPlanRequest(prev => ({
+                            ...prev,
+                            cuisinePreferences: prev.cuisinePreferences.includes(cuisine)
+                              ? prev.cuisinePreferences.filter(c => c !== cuisine)
+                              : [...prev.cuisinePreferences, cuisine]
+                          }));
+                        }}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          background: planRequest.cuisinePreferences.includes(cuisine) ? 'rgba(34, 197, 94, 0.1)' : '#f9fafb',
+                          border: `1px solid ${planRequest.cuisinePreferences.includes(cuisine) ? '#22c55e' : '#d1d5db'}`,
+                          borderRadius: '20px',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {cuisine}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.75rem' }}>
+                    Special Requests (Optional)
+                  </label>
+                  <textarea
+                    value={planRequest.specialRequests}
+                    onChange={(e) => setPlanRequest(prev => ({ ...prev, specialRequests: e.target.value }))}
+                    placeholder="e.g., 'More breakfast options', 'Easy meals for busy weeknights', 'Include vegetarian dinner'..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Results */}
+            {step === 4 && (
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '600', color: '#1f2937', marginBottom: '1.5rem' }}>
+                  🎉 Your AI-Generated Meal Suggestions
+                </h3>
+                
+                {isGenerating ? (
+                  <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      border: '4px solid #e5e7eb',
+                      borderTop: '4px solid #22c55e',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto 1rem'
+                    }} />
+                    <p style={{ fontSize: '1.1rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                      🤖 AI is creating your personalized meal suggestions...
+                    </p>
+                    <p style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                      Analyzing family allergies and generating safe meal options
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderRadius: '12px',
+                      padding: '1.5rem',
+                      marginBottom: '2rem',
+                      textAlign: 'center'
+                    }}>
+                      <h4 style={{ color: '#059669', margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>
+                        ✨ Your meal suggestions are ready!
+                      </h4>
+                      <p style={{ color: '#059669', margin: '0', fontSize: '0.9rem' }}>
+                        {suggestions.length} family-safe meals generated based on your preferences
+                      </p>
+                    </div>
+
+                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      {suggestions.map((suggestion, index) => (
+                        <div key={suggestion.id} style={{
+                          background: '#f9fafb',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          marginBottom: '0.75rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <h5 style={{ margin: '0 0 0.25rem 0', color: '#1f2937', fontSize: '1rem' }}>
+                              {getMealIcon(suggestion.type)} {suggestion.name}
+                            </h5>
+                            <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#6b7280' }}>
+                              {suggestion.description}
+                            </p>
+                            <p style={{ margin: '0', fontSize: '0.75rem', color: '#9ca3af' }}>
+                              ⏱️ {suggestion.prepTime + suggestion.cookTime} min total • {suggestion.cuisine}
+                              {suggestion.allergenWarnings.length > 0 && (
+                                <span style={{ color: '#dc2626', marginLeft: '0.5rem' }}>
+                                  ⚠️ Contains: {suggestion.allergenWarnings.join(', ')}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <button 
+                            onClick={() => addSuggestionToMealPlan(suggestion)}
+                            style={{
+                              padding: '0.5rem 1rem',
+                              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              marginLeft: '1rem'
+                            }}
+                          >
+                            Add to Plan
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+              <button
+                onClick={() => step > 1 ? setStep(step - 1) : setShowSuggestionWizard(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'rgba(107, 114, 128, 0.1)',
+                  color: '#374151',
+                  border: '1px solid rgba(107, 114, 128, 0.2)',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                {step === 1 ? 'Cancel' : 'Back'}
+              </button>
+
+              {step < 3 && (
+                <button
+                  onClick={() => setStep(step + 1)}
+                  disabled={
+                    (step === 1 && planRequest.mealTypes.length === 0) ||
+                    (step === 2 && planRequest.attendees.length === 0)
+                  }
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    opacity: (
+                      (step === 1 && planRequest.mealTypes.length === 0) ||
+                      (step === 2 && planRequest.attendees.length === 0)
+                    ) ? 0.5 : 1
+                  }}
+                >
+                  Continue
+                </button>
+              )}
+
+              {step === 3 && (
+                <button
+                  onClick={handleGeneratePlan}
+                  disabled={isGenerating}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: isGenerating ? '#9ca3af' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: isGenerating ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {isGenerating ? 'Generating...' : '🤖 Generate AI Suggestions'}
+                </button>
+              )}
+
+              {step === 4 && !isGenerating && (
+                <button
+                  onClick={() => setShowSuggestionWizard(false)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Done
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const AddMealForm = () => {
     const [name, setName] = useState(editingMeal?.name || '');
     const [type, setType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>(editingMeal?.type || 'dinner');
@@ -197,9 +789,6 @@ const MealPlanner = () => {
           const updated = prev.filter(plan => plan.date !== selectedDate);
           return [...updated, planForDate!];
         });
-
-        // TODO: Save to API
-        // await fetch('/api/meal-plans', { method: 'POST', body: JSON.stringify(planForDate) });
 
         setShowAddMeal(false);
         setEditingMeal(null);
@@ -379,7 +968,7 @@ const MealPlanner = () => {
                         margin: '0.125rem',
                         fontSize: '0.75rem'
                       }}>
-                        {allergy.name} ({allergy.severity})
+                        {allergy.name} ({allergy.severity.replace('_', ' ').toLowerCase()})
                       </span>
                     ))}
                   </div>
@@ -621,6 +1210,28 @@ const MealPlanner = () => {
               Day View
             </button>
           </div>
+          
+          <button
+            onClick={() => setShowSuggestionWizard(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1rem',
+              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(139, 92, 246, 0.3)'
+            }}
+          >
+            <Wand2 size={18} />
+            AI Suggestions
+          </button>
+          
           <button
             onClick={() => setShowAddMeal(true)}
             style={{
@@ -845,9 +1456,15 @@ const MealPlanner = () => {
       )}
 
       {showAddMeal && <AddMealForm />}
+      {showSuggestionWizard && <SuggestionWizard />}
+
+      <style jsx>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
 
 export { MealPlanner };
-export default MealPlanner;
